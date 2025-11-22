@@ -1,0 +1,19 @@
+# Compilación
+*.o
+*.obj
+*.dll
+*.exe
+*.a
+*.lib
+*.out
+
+# Librerías SDL
+lib/**/*
+!lib/KEEP   # (solo para permitir una carpeta vacía si quieres mantener estructura)
+
+# Builds
+output/*
+build/*
+
+# VSCode
+.vscode/

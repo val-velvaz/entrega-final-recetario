@@ -1,11 +1,11 @@
 #pragma once
 
 #include "NodoDoblementeLigado.hpp"
-
 #include <stdexcept>
 #include <string>
-
 #include <sstream>
+#include <utility> // Para std::swap y std::move
+#include <functional> // Para std::function
 
 template <typename TipoDato>
 class ListaDoblementeLigada {
@@ -20,6 +20,7 @@ private:
         }
 
         NodoDoblementeLigado<TipoDato>* nodoActual = nullptr;
+        // Optimización: Buscar desde el inicio o desde el final según cercanía
         if (posicion < (cantidadElementosActuales_ / 2)) {
             nodoActual = punteroNodoInicio_;
             for (int i = 0; i < posicion; ++i) {
@@ -36,22 +37,27 @@ private:
     }
 
 public:
+    // Constructor por defecto
     ListaDoblementeLigada()
         : punteroNodoInicio_(nullptr), punteroNodoFinal_(nullptr), cantidadElementosActuales_(0) {
     }
 
+    // Constructor de Copia (Deep Copy) Seguro
     ListaDoblementeLigada(const ListaDoblementeLigada<TipoDato>& otraLista)
-        : punteroNodoInicio_(nullptr),
-        punteroNodoFinal_(nullptr),
-        cantidadElementosActuales_(0) {
-        
-        NodoDoblementeLigado<TipoDato>* nodoActual = otraLista.punteroNodoInicio_;
-        while (nodoActual != nullptr) {
-            this->agregarAlFinal(nodoActual->datosAlmacenados);
-            nodoActual = nodoActual->punteroNodoSiguiente;
+        : punteroNodoInicio_(nullptr), punteroNodoFinal_(nullptr), cantidadElementosActuales_(0) {
+        try {
+            NodoDoblementeLigado<TipoDato>* nodoActual = otraLista.punteroNodoInicio_;
+            while (nodoActual != nullptr) {
+                this->agregarAlFinal(nodoActual->datosAlmacenados);
+                nodoActual = nodoActual->punteroNodoSiguiente;
+            }
+        } catch (...) {
+            limpiarLista();
+            throw;
         }
     }
 
+    // Constructor de Movimiento (Move Constructor)
     ListaDoblementeLigada(ListaDoblementeLigada<TipoDato>&& otraLista) noexcept
         : punteroNodoInicio_(otraLista.punteroNodoInicio_),
         punteroNodoFinal_(otraLista.punteroNodoFinal_),
@@ -62,22 +68,23 @@ public:
         otraLista.cantidadElementosActuales_ = 0;
     }
 
+    // Destructor
     ~ListaDoblementeLigada() {
         limpiarLista();
     }
 
+    // Operador de Asignación por Copia (Copy Assignment) - Idioma Copy-and-Swap
     ListaDoblementeLigada<TipoDato>& operator=(const ListaDoblementeLigada<TipoDato>& otraLista) {
         if (this != &otraLista) {
-            limpiarLista();
-            NodoDoblementeLigado<TipoDato>* nodoActual = otraLista.punteroNodoInicio_;
-            while (nodoActual != nullptr) {
-                this->agregarAlFinal(nodoActual->datosAlmacenados);
-                nodoActual = nodoActual->punteroNodoSiguiente;
-            }
+            ListaDoblementeLigada<TipoDato> copiaTemporal(otraLista);
+            std::swap(punteroNodoInicio_, copiaTemporal.punteroNodoInicio_);
+            std::swap(punteroNodoFinal_, copiaTemporal.punteroNodoFinal_);
+            std::swap(cantidadElementosActuales_, copiaTemporal.cantidadElementosActuales_);
         }
         return *this;
     }
 
+    // Operador de Asignación por Movimiento (Move Assignment)
     ListaDoblementeLigada<TipoDato>& operator=(ListaDoblementeLigada<TipoDato>&& otraLista) noexcept {
         if (this != &otraLista) {
             limpiarLista();
@@ -92,9 +99,15 @@ public:
         return *this;
     }
 
+    // --- MÉTODOS DE GESTIÓN ---
+
     void agregarAlFinal(const TipoDato& elementoNuevo) {
-        NodoDoblementeLigado<TipoDato>* nodoNuevo = 
-            new NodoDoblementeLigado<TipoDato>(elementoNuevo);
+        NodoDoblementeLigado<TipoDato>* nodoNuevo = nullptr;
+        try {
+            nodoNuevo = new NodoDoblementeLigado<TipoDato>(elementoNuevo);
+        } catch (const std::bad_alloc& e) {
+            throw std::runtime_error("No hay memoria suficiente para agregar nodo.");
+        }
 
         if (this->estaVacia()) {
             punteroNodoInicio_ = nodoNuevo;
@@ -108,8 +121,12 @@ public:
     }
 
     void agregarAlInicio(const TipoDato& elementoNuevo) {
-        NodoDoblementeLigado<TipoDato>* nodoNuevo = 
-            new NodoDoblementeLigado<TipoDato>(elementoNuevo);
+        NodoDoblementeLigado<TipoDato>* nodoNuevo = nullptr;
+        try {
+            nodoNuevo = new NodoDoblementeLigado<TipoDato>(elementoNuevo);
+        } catch (const std::bad_alloc& e) {
+            throw std::runtime_error("No hay memoria suficiente para agregar nodo.");
+        }
 
         if (this->estaVacia()) {
             punteroNodoInicio_ = nodoNuevo;
@@ -161,58 +178,54 @@ public:
     }
 
     void eliminarEnPosicion(int posicionEliminacion) {
-            if (posicionEliminacion < 0 || posicionEliminacion >= cantidadElementosActuales_) {
-                throw std::out_of_range("Posición inválida para eliminación");
-            }
-    
-            // Caso 1: Es el primer nodo
-            if (posicionEliminacion == 0) {
-                eliminarDelInicio();
-                return;
-            }
-    
-            // Caso 2: Es el último nodo
-            if (posicionEliminacion == cantidadElementosActuales_ - 1) {
-                eliminarDelFinal();
-                return;
-            }
-    
-            // Caso 3: Es un nodo en medio
-            // 1. Encontramos el nodo a eliminar (O(n))
-            NodoDoblementeLigado<TipoDato>* nodoAeliminar = obtenerNodoEnPosicion(posicionEliminacion);
-            
-            // 2. Obtenemos sus vecinos
-            NodoDoblementeLigado<TipoDato>* nodoPrevio = nodoAeliminar->punteroNodoPrevio;
-            NodoDoblementeLigado<TipoDato>* nodoSiguiente = nodoAeliminar->punteroNodoSiguiente;
-    
-            // 3. "Saltamos" el nodo, conectando a sus vecinos entre sí
-            nodoPrevio->punteroNodoSiguiente = nodoSiguiente;
-            nodoSiguiente->punteroNodoPrevio = nodoPrevio;
-    
-            // 4. Borramos el nodo y actualizamos el contador
-            delete nodoAeliminar;
-            cantidadElementosActuales_--;
+        if (posicionEliminacion < 0 || posicionEliminacion >= cantidadElementosActuales_) {
+            throw std::out_of_range("Posición inválida para eliminación");
+        }
+
+        if (posicionEliminacion == 0) {
+            eliminarDelInicio();
+            return;
+        }
+
+        if (posicionEliminacion == cantidadElementosActuales_ - 1) {
+            eliminarDelFinal();
+            return;
+        }
+
+        NodoDoblementeLigado<TipoDato>* nodoAeliminar = obtenerNodoEnPosicion(posicionEliminacion);
+        NodoDoblementeLigado<TipoDato>* nodoPrevio = nodoAeliminar->punteroNodoPrevio;
+        NodoDoblementeLigado<TipoDato>* nodoSiguiente = nodoAeliminar->punteroNodoSiguiente;
+
+        nodoPrevio->punteroNodoSiguiente = nodoSiguiente;
+        nodoSiguiente->punteroNodoPrevio = nodoPrevio;
+
+        delete nodoAeliminar;
+        cantidadElementosActuales_--;
     }
+
+    // --- MÉTODOS DE ACCESO (LOS QUE TE FALTABAN) ---
 
     TipoDato& obtenerEnPosicion(int posicion) {
         NodoDoblementeLigado<TipoDato>* nodo = obtenerNodoEnPosicion(posicion);
-        if (!nodo) throw std::out_of_range("Posición inválida");
+        if (!nodo) throw std::out_of_range("Posición inválida: " + std::to_string(posicion));
         return nodo->datosAlmacenados;
     }
 
     const TipoDato& obtenerEnPosicion(int posicion) const {
         NodoDoblementeLigado<TipoDato>* nodo = obtenerNodoEnPosicion(posicion);
-        if (!nodo) throw std::out_of_range("Posición inválida");
+        if (!nodo) throw std::out_of_range("Posición inválida: " + std::to_string(posicion));
         return nodo->datosAlmacenados;
+    }
+
+    int obtenerCantidadElementos() const {
+        return cantidadElementosActuales_;
     }
 
     bool estaVacia() const {
         return cantidadElementosActuales_ == 0;
     }
 
-    int obtenerCantidadElementos() const {
-        return cantidadElementosActuales_;
-    }
+    // --- MÉTODOS DE UTILIDAD ---
 
     void limpiarLista() {
         NodoDoblementeLigado<TipoDato>* nodoActual = punteroNodoInicio_;
@@ -226,9 +239,24 @@ public:
         cantidadElementosActuales_ = 0;
     }
 
-    std::string obtenerRepresentacionTexto(
-        std::string (*convertirATexto)(const TipoDato&)
-    ) const {
+    // Nuevo método para iteración eficiente (O(N) en vez de O(N^2))
+    void paraCadaElemento(std::function<void(TipoDato&)> accion) {
+        NodoDoblementeLigado<TipoDato>* actual = punteroNodoInicio_;
+        while (actual != nullptr) {
+            accion(actual->datosAlmacenados);
+            actual = actual->punteroNodoSiguiente;
+        }
+    }
+
+    void paraCadaElemento(std::function<void(const TipoDato&)> accion) const {
+        NodoDoblementeLigado<TipoDato>* actual = punteroNodoInicio_;
+        while (actual != nullptr) {
+            accion(actual->datosAlmacenados);
+            actual = actual->punteroNodoSiguiente;
+        }
+    }
+
+    std::string obtenerRepresentacionTexto(std::string (*convertirATexto)(const TipoDato&)) const {
         std::stringstream representacion;
         NodoDoblementeLigado<TipoDato>* nodoActual = punteroNodoInicio_;
         int indiceElemento = 1;
@@ -242,7 +270,6 @@ public:
         }
         return representacion.str();
     }
-    
 
     void intercambiarDatos(int pos1, int pos2) {
         if (pos1 == pos2) return;

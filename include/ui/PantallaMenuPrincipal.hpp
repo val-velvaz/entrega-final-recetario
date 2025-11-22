@@ -1,6 +1,7 @@
 #pragma once
 #include "ui/GameState.hpp"
-#include "Game.hpp" 
+#include "Game.hpp"
+#include "ui/Boton.hpp" // Importante
 
 class PantallaMenuPrincipal : public GameState {
 private:
@@ -8,16 +9,10 @@ private:
     SDL_Texture* texturaTitulo;
     SDL_FRect rectTitulo;
 
-    SDL_Texture* texBotonAgregar;
-    SDL_FRect rectBotonAgregar;
-
-    SDL_Texture* texBotonVer;
-    SDL_FRect rectBotonVer;
-
-    SDL_Texture* texBotonSalir;
-    SDL_FRect rectBotonSalir;
-
-    bool puntoEnRectangulo(float x, float y, const SDL_FRect& rect);
+    // Botones encapsulados
+    Boton* btnAgregar;
+    Boton* btnVer;
+    Boton* btnSalir;
 
 public:
     PantallaMenuPrincipal();

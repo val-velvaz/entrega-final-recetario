@@ -4,6 +4,7 @@
             "name": "Win32-g++",
             "includePath": [
                 "${workspaceFolder}/include",
+                "${workspaceFolder}/lib/**",
                 "${workspaceFolder}/lib/SDL3/x86_64-w64-mingw32/include",
                 "${workspaceFolder}/lib/SDL_ttf/x86_64-w64-mingw32/include",
                 "${workspaceFolder}/lib/SDL3_image/x86_64-w64-mingw32/include"

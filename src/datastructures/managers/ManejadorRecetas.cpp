@@ -160,6 +160,7 @@ void ManejadorRecetas::guardarRecetasAarchivo(const std::string& rutaArchivo) {
     archivoSalida.close();
 }
 
+/*
 void ManejadorRecetas::cargarRecetasDesdeArchivo(const std::string& rutaArchivo) {
     std::ifstream archivoEntrada(rutaArchivo);
     if (!archivoEntrada.is_open()) {
@@ -191,6 +192,51 @@ void ManejadorRecetas::cargarRecetasDesdeArchivo(const std::string& rutaArchivo)
 // ========================================================================
 // ESTADÍSTICAS Y REPORTES
 // ========================================================================
+*/
+void ManejadorRecetas::cargarRecetasDesdeArchivo(const std::string& rutaArchivo) {
+    std::ifstream archivoEntrada(rutaArchivo);
+    if (!archivoEntrada.is_open()) {
+        return; 
+    }
+
+    // --- VALIDACIÓN DE SEGURIDAD ---
+    // Verificar si el archivo está vacío
+    if (archivoEntrada.peek() == std::ifstream::traits_type::eof()) {
+        return;
+    }
+
+    int cantidad = 0;
+    archivoEntrada >> cantidad; 
+
+    if (archivoEntrada.fail()) {
+        return;
+    }
+
+    // 🛑 FRENO DE EMERGENCIA: 
+    // Si el archivo dice que tiene más de 10,000 recetas, es basura o corrupción.
+    // Esto evita que tu RAM suba al 95% intentando crear millones de nodos.
+    if (cantidad < 0 || cantidad > 10000) {
+        std::cerr << "[ALERTA] Archivo corrupto detectado (Cantidad absurda: " << cantidad << "). Se reiniciara la base de datos." << std::endl;
+        eliminarTodasLasRecetas(); // Aseguramos limpieza
+        return; 
+    }
+
+    eliminarTodasLasRecetas();
+    archivoEntrada.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    for (int i = 0; i < cantidad; ++i) {
+        Receta recetaTemporal;
+        try {
+            archivoEntrada >> recetaTemporal;
+            if (archivoEntrada.fail()) break; // Parar si el archivo se corta inesperadamente
+            recetasAlmacenadas.agregarAlFinal(recetaTemporal);
+        } catch (...) {
+            break; // Salir si hay error al leer una receta individual
+        }
+    }
+
+    archivoEntrada.close();
+}
 
 std::string ManejadorRecetas::obtenerEstadisticasRecetario() const {
     std::stringstream ss;

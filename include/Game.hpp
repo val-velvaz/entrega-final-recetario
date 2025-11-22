@@ -21,6 +21,10 @@ private:
     ManejadorRecetas manejadorRecetas;
     const std::string RUTA_ARCHIVO_RECETAS = "assets/data/recetario.dat";
 
+    // --- GESTIÓN DIFERIDA DE ESTADOS ---
+    GameState* estadoPendiente;
+    bool hayCambioPendiente;
+
     void inicializarSDL();
     void cargarDatos();
     void limpiar();
@@ -28,6 +32,9 @@ private:
     void procesarEventos();
     void actualizar();
     void dibujar();
+    
+    // Ejecuta el cambio de forma segura al inicio del frame
+    void aplicarCambioEstado();
 
 public:
     Game();

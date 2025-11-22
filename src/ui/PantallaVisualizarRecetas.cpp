@@ -3,6 +3,7 @@
 #include "persistence/RutasAssets.hpp"
 #include <iostream>
 #include <string>
+#include <stdexcept> 
 
 PantallaVisualizarRecetas::PantallaVisualizarRecetas()
     : fuenteTitulo(nullptr), fuenteListado(nullptr), texTitulo(nullptr), texBotonVolver(nullptr) {}
@@ -13,7 +14,8 @@ PantallaVisualizarRecetas::~PantallaVisualizarRecetas() {
 
 void PantallaVisualizarRecetas::init(Game& game) {
     SDL_Renderer* renderer = game.getRenderer();
-    
+    if (!renderer) return;
+
     fuenteTitulo = TTF_OpenFont(RutasAssets::obtenerRutaFuenteNegrita().c_str(), 36);
     fuenteListado = TTF_OpenFont(RutasAssets::obtenerRutaFuenteRegular().c_str(), 24);
 
@@ -30,11 +32,12 @@ void PantallaVisualizarRecetas::init(Game& game) {
     texBotonVolver = IMG_LoadTexture(renderer, RutasAssets::obtenerRutaIconoBotonVolver().c_str());
     rectBotonVolver = { 950, 30, 50, 50 }; 
 
-    generarCacheListado(game);
+    try {
+        generarCacheListado(game);
+    } catch (...) {}
 }
 
 void PantallaVisualizarRecetas::generarCacheListado(Game& game) {
-    // Limpiar caché anterior
     for (auto& item : itemsRenderizados) {
         if (item.textura) SDL_DestroyTexture(item.textura);
     }
@@ -44,39 +47,26 @@ void PantallaVisualizarRecetas::generarCacheListado(Game& game) {
     int cantidad = listaRecetas.obtenerCantidadElementos();
     SDL_Renderer* renderer = game.getRenderer();
     SDL_Color colorTexto = { 50, 50, 100, 255 }; 
-
     float posY = 100.0f; 
 
     for (int i = 0; i < cantidad; ++i) {
-        Receta receta = listaRecetas.obtenerEnPosicion(i);
-        std::string texto = std::to_string(i + 1) + ". " + receta.obtenerNombrePlatillo();
-        
-        texto += " (" + std::to_string(receta.obtenerTiempoPreparacion()) + " mins)";
+        try {
+            Receta receta = listaRecetas.obtenerEnPosicion(i);
+            std::string texto = std::to_string(i + 1) + ". " + receta.obtenerNombrePlatillo();
+            texto += " (" + std::to_string(receta.obtenerTiempoPreparacion()) + " mins)";
 
-        if (fuenteListado) {
-            SDL_Surface* sup = TTF_RenderText_Blended(fuenteListado, texto.c_str(), 0, colorTexto);
-            if (sup) {
-                ItemLista newItem;
-                newItem.textura = SDL_CreateTextureFromSurface(renderer, sup);
-                newItem.rect = { 60, posY, (float)sup->w, (float)sup->h };
-                itemsRenderizados.push_back(newItem);
-                
-                SDL_DestroySurface(sup);
-                posY += 40.0f; 
+            if (fuenteListado) {
+                SDL_Surface* sup = TTF_RenderText_Blended(fuenteListado, texto.c_str(), 0, colorTexto);
+                if (sup) {
+                    ItemLista newItem;
+                    newItem.textura = SDL_CreateTextureFromSurface(renderer, sup);
+                    newItem.rect = { 60, posY, (float)sup->w, (float)sup->h };
+                    itemsRenderizados.push_back(newItem);
+                    SDL_DestroySurface(sup);
+                    posY += 40.0f; 
+                }
             }
-        }
-    }
-
-    if (cantidad == 0 && fuenteListado) {
-        SDL_Color colorGris = { 150, 150, 150, 255 };
-        SDL_Surface* sup = TTF_RenderText_Blended(fuenteListado, "(El recetario esta vacio)", 0, colorGris);
-        if (sup) {
-            ItemLista newItem;
-            newItem.textura = SDL_CreateTextureFromSurface(renderer, sup);
-            newItem.rect = { 60, posY, (float)sup->w, (float)sup->h };
-            itemsRenderizados.push_back(newItem);
-            SDL_DestroySurface(sup);
-        }
+        } catch (...) { continue; }
     }
 }
 
@@ -86,7 +76,9 @@ void PantallaVisualizarRecetas::cleanup() {
     if (fuenteTitulo) TTF_CloseFont(fuenteTitulo);
     if (fuenteListado) TTF_CloseFont(fuenteListado);
 
-    // Limpiar lista cacheada
+    texTitulo = nullptr; texBotonVolver = nullptr;
+    fuenteTitulo = nullptr; fuenteListado = nullptr;
+
     for (auto& item : itemsRenderizados) {
         if (item.textura) SDL_DestroyTexture(item.textura);
     }
@@ -110,6 +102,7 @@ void PantallaVisualizarRecetas::handleEvents(Game& game) {
                 float my = evento.button.y;
 
                 if (puntoEnRectangulo(mx, my, rectBotonVolver)) {
+                    // AHORA ES SEGURO GRACIAS AL CAMBIO EN GAME.CPP
                     game.cambiarEstado(new PantallaMenuPrincipal());
                 }
             }
@@ -117,12 +110,10 @@ void PantallaVisualizarRecetas::handleEvents(Game& game) {
     }
 }
 
-void PantallaVisualizarRecetas::update(Game& game) {
-}
+void PantallaVisualizarRecetas::update(Game& game) {}
 
 void PantallaVisualizarRecetas::render(Game& game) {
     SDL_Renderer* renderer = game.getRenderer();
-
     if (texTitulo) SDL_RenderTexture(renderer, texTitulo, nullptr, &rectTitulo);
     if (texBotonVolver) SDL_RenderTexture(renderer, texBotonVolver, nullptr, &rectBotonVolver);
 

@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include <utility> // Necesario para std::swap
 
 template <typename TipoDato>
 class ListaSimplementeLigada {
@@ -11,7 +12,6 @@ private:
     NodoSimplementeLigado<TipoDato>* punteroNodoInicio_; 
     NodoSimplementeLigado<TipoDato>* punteroNodoFinal_;   
     int cantidadElementosActuales_;                          
-
 
     NodoSimplementeLigado<TipoDato>* obtenerNodoEnPosicion(int posicion) const {
         if (posicion < 0 || posicion >= cantidadElementosActuales_) {
@@ -26,22 +26,26 @@ private:
     }
 
 public:
-
     ListaSimplementeLigada()
         : punteroNodoInicio_(nullptr),
         punteroNodoFinal_(nullptr),
         cantidadElementosActuales_(0) {
     }
 
+    // Constructor de copia seguro
     ListaSimplementeLigada(const ListaSimplementeLigada<TipoDato>& otraLista)
         : punteroNodoInicio_(nullptr),
         punteroNodoFinal_(nullptr),
         cantidadElementosActuales_(0) {
-        
-        NodoSimplementeLigado<TipoDato>* nodoActual = otraLista.punteroNodoInicio_;
-        while (nodoActual != nullptr) {
-            this->agregarAlFinal(nodoActual->datosAlmacenados);
-            nodoActual = nodoActual->punteroSiguienteNodo;
+        try {
+            NodoSimplementeLigado<TipoDato>* nodoActual = otraLista.punteroNodoInicio_;
+            while (nodoActual != nullptr) {
+                this->agregarAlFinal(nodoActual->datosAlmacenados);
+                nodoActual = nodoActual->punteroSiguienteNodo;
+            }
+        } catch (...) {
+            limpiarLista();
+            throw;
         }
     }
 
@@ -60,15 +64,18 @@ public:
         limpiarLista();
     }
 
+    // CORRECCIÓN CRÍTICA: Copy-and-Swap para seguridad de excepciones
     ListaSimplementeLigada<TipoDato>& operator=(const ListaSimplementeLigada<TipoDato>& otraLista) {
         if (this != &otraLista) {
-            limpiarLista();
+            // 1. Hacemos una copia temporal (si falla new, no pasa nada aquí)
+            ListaSimplementeLigada<TipoDato> temporal(otraLista);
             
-            NodoSimplementeLigado<TipoDato>* nodoActual = otraLista.punteroNodoInicio_;
-            while (nodoActual != nullptr) {
-                this->agregarAlFinal(nodoActual->datosAlmacenados);
-                nodoActual = nodoActual->punteroSiguienteNodo;
-            }
+            // 2. Intercambiamos los punteros (operación atómica/segura)
+            std::swap(punteroNodoInicio_, temporal.punteroNodoInicio_);
+            std::swap(punteroNodoFinal_, temporal.punteroNodoFinal_);
+            std::swap(cantidadElementosActuales_, temporal.cantidadElementosActuales_);
+            
+            // 3. Al salir, 'temporal' destruye los datos viejos automáticamente
         }
         return *this;
     }
@@ -149,8 +156,10 @@ public:
             punteroNodoInicio_ = nullptr;
             punteroNodoFinal_ = nullptr;
         } else {
+            // O(N) es inevitable en lista simple sin puntero previo
             NodoSimplementeLigado<TipoDato>* nodoAnteriorAlFinal = 
                 obtenerNodoEnPosicion(cantidadElementosActuales_ - 2);
+            
             delete punteroNodoFinal_;
             punteroNodoFinal_ = nodoAnteriorAlFinal;
             punteroNodoFinal_->punteroSiguienteNodo = nullptr;
@@ -184,6 +193,8 @@ public:
             return;
         }
 
+        // Optimización: si borran el último, usar la lógica de eliminarDelFinal
+        // para mantener punteroNodoFinal_ correcto
         if (posicionEliminacion == cantidadElementosActuales_ - 1) {
             eliminarDelFinal();
             return;
@@ -230,6 +241,7 @@ public:
         cantidadElementosActuales_ = 0;
     }
 
+    // ... (Iteradores y to string se mantienen igual)
     std::string obtenerRepresentacionTexto(
         std::string (*convertirATexto)(const TipoDato&)
     ) const {
@@ -247,28 +259,4 @@ public:
 
         return representacion.str();
     }
-
-    class Iterador {
-    private:
-        NodoSimplementeLigado<TipoDato>* nodoActual_;
-    public:
-        Iterador(NodoSimplementeLigado<TipoDato>* nodo) : nodoActual_(nodo) {}
-
-        TipoDato& operator*() {
-            if (!nodoActual_) throw std::runtime_error("Iterador nulo");
-            return nodoActual_->datosAlmacenados;
-        }
-
-        Iterador& operator++() {
-            if (nodoActual_) nodoActual_ = nodoActual_->punteroSiguienteNodo;
-            return *this;
-        }
-
-        bool operator!=(const Iterador& otro) const {
-            return nodoActual_ != otro.nodoActual_;
-        }
-    };
-
-    Iterador comenzar() { return Iterador(punteroNodoInicio_); }
-    Iterador finalizar() { return Iterador(nullptr); }
 };

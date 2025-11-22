@@ -13,25 +13,59 @@ INCLUDES = -Iinclude -I$(SDL3_DIR)/include -I$(SDL_TTF_DIR)/include -I$(SDL3_ima
 LIBS = -L$(SDL3_DIR)/lib -L$(SDL_TTF_DIR)/lib -L$(SDL3_image_DIR)/lib -lSDL3_image -lSDL3_ttf -lSDL3
 
 # --- BANDERAS (FLAGS) ---
-CXXFLAGS = -std=c++14 $(INCLUDES) -m64
+CXXFLAGS = -std=c++14 $(INCLUDES) -m64 -Wall -Wextra
 LDFLAGS = $(LIBS)
 
 # --- BÚSQUEDA RECURSIVA DE ARCHIVOS ---
 SOURCES = $(shell find src -name '*.cpp')
 OBJECTS = $(SOURCES:.cpp=.o)
+HEADERS = $(shell find include -name '*.hpp')
 
-# --- REGLAS DE MAKEFILE ---
+# --- REGLAS PRINCIPALES ---
+.PHONY: all clean run force rebuild check info
+
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
+	@echo "=== ENLAZANDO EJECUTABLE ==="
 	$(CXX) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
+	@echo "COMPILACION EXITOSA: $(TARGET)"
+	@ls -lh $(TARGET)
 
 %.o: %.cpp
+	@echo "Compilando: $<"
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-# --- REGLAS ADICIONALES ---
 clean:
+	@echo "Limpiando..."
 	rm -f $(OBJECTS) $(TARGET)
+	@echo "Limpieza completa"
+
+force: clean all
+
+rebuild:
+	@echo "Recompilando archivos modificados..."
+	$(MAKE) all
 
 run: all
+	@echo "Ejecutando programa..."
+	@echo "========================================"
 	./$(TARGET)
+
+check:
+	@echo "Archivos fuente:"
+	@ls -lh $(SOURCES) | tail -5
+	@echo ""
+	@echo "Archivos objeto:"
+	@ls -lh $(OBJECTS) | tail -5
+	@echo ""
+	@echo "Ejecutable:"
+	@ls -lh $(TARGET) || echo "No existe"
+
+info:
+	@echo "Compilador: $(CXX)"
+	@echo "Target: $(TARGET)"
+	@echo "Archivos fuente: $(words $(SOURCES))"
+	@echo "Flags: $(CXXFLAGS)"
+	@echo ""
+	@find src -name "*.cpp" | head -10
