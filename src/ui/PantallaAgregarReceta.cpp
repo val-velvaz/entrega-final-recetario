@@ -35,7 +35,7 @@ void PantallaAgregarReceta::handleEvents(Game& game) {
         else if (evento.type == SDL_EVENT_KEY_DOWN) {
             // Volver con ESC
             if (evento.key.key == SDLK_ESCAPE) {
-                game.cambiarEstado(new PantallaMenuPrincipal());
+                game.popEstado();
             }
             // Agregar con ENTER
             else if (evento.key.key == SDLK_RETURN) {

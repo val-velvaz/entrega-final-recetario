@@ -3,14 +3,13 @@
 // Implementación del gestor de rutas
 // ============================================================================
 #include "persistence/RutasAssets.hpp"
-#include "utils/ConvertidoresFormatos.hpp" // Necesitamos "categoriaATexto"
-#include <iostream> // Para debugging si es necesario
+// #include "utils/ConvertidoresFormatos.hpp" // Ya no lo necesitamos aquí gracias al switch
+#include <iostream> 
 
 // ============================================================================
 // INICIALIZACIÓN DE CONSTANTES ESTÁTICAS
 // ============================================================================
 
-// Definimos las variables estáticas declaradas en el .hpp
 const std::string RutasAssets::RUTA_RELATIVA_ASSETS = "assets";
 const std::string RutasAssets::RUTA_RELATIVA_FONTS = "assets/fonts";
 const std::string RutasAssets::RUTA_RELATIVA_ICONS = "assets/images/icons";
@@ -53,20 +52,29 @@ std::string RutasAssets::obtenerRutaIconoBotonGuardar() {
     return RUTA_RELATIVA_ICONS + "/boton_guardar.png";
 }
 
+// CORRECCIÓN: Mapeo manual para evitar problemas con caracteres especiales (ñ, acentos)
 std::string RutasAssets::obtenerRutaCarpetaImagenesPorCategoria(const Categoria& categoria) {
-    std::string nombreCarpeta = categoriaATexto(categoria); 
-    
-    for (char& c : nombreCarpeta) {
-        c = tolower(c);
+    switch (categoria) {
+        case Categoria::DESAYUNO:
+            return RUTA_RELATIVA_PLATILLOS + "/desayuno";
+        case Categoria::COMIDA:
+            return RUTA_RELATIVA_PLATILLOS + "/comida";
+        case Categoria::CENA:
+            return RUTA_RELATIVA_PLATILLOS + "/cena";
+        case Categoria::NAVIDENO:
+            // IMPORTANTE: La carpeta en disco debe llamarse "navideno" (sin ñ)
+            return RUTA_RELATIVA_PLATILLOS + "/navideno"; 
+        case Categoria::SIN_CATEGORIZAR:
+        default:
+            return RUTA_RELATIVA_PLATILLOS + "/otros";
     }
-    
-    return RUTA_RELATIVA_PLATILLOS + "/" + nombreCarpeta;
 }
 
 std::string RutasAssets::obtenerRutaImagenPlatillo(
     const Categoria& categoria,
     const std::string& nombrePlatillo)
 {
+    // Por ahora devolvemos una imagen por defecto, luego podrás buscar por nombre real
     std::string nombreArchivo = "default.png"; 
     return obtenerRutaCarpetaImagenesPorCategoria(categoria) + "/" + nombreArchivo;
 }
