@@ -24,11 +24,9 @@ public:
     Nombre(Nombre&& otroNombre) noexcept;
 
     Nombre& operator = (const Nombre& otroNombre);
-    
     Nombre& operator = (Nombre&& otroNombre) noexcept;
 
     bool operator == (const Nombre& otroNombre) const;
-    
     bool operator<(const Nombre& otroNombre) const;
 
     std::string obtenerPrimerNombre() const { 
@@ -47,7 +45,7 @@ public:
         void establecerApellidos(const std::string& apl1, const std::string& apl2 = "");
     
     std::string obtenerNombreCompleto() const;
-    
+    //
     std::string obtenerIniciales() const;
     
     std::string toString() const;
@@ -55,4 +53,4 @@ public:
     friend std::ostream& operator<<(std::ostream& salida, const Nombre& nombre);
     
     friend std::istream& operator>>(std::istream& entrada, Nombre& nombre);
-};
+}; //////////// HAHASHAHSAHSAHSHASAHSHASHASAS
