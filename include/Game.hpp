@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h> 
@@ -21,10 +21,6 @@ private:
     ManejadorRecetas manejadorRecetas;
     const std::string RUTA_ARCHIVO_RECETAS = "assets/data/recetario.dat";
 
-    // --- GESTIÓN DIFERIDA DE ESTADOS ---
-    GameState* estadoPendiente;
-    bool hayCambioPendiente;
-
     void inicializarSDL();
     void cargarDatos();
     void limpiar();
@@ -32,9 +28,6 @@ private:
     void procesarEventos();
     void actualizar();
     void dibujar();
-    
-    // Ejecuta el cambio de forma segura al inicio del frame
-    void aplicarCambioEstado();
 
 public:
     Game();
@@ -47,6 +40,7 @@ public:
     void cambiarEstado(GameState* estado);
 
     SDL_Renderer* getRenderer() { return renderer; }
+    SDL_Window* getWindow() { return ventana; } // <--- NUEVO GETTER IMPORTANTE
     ManejadorRecetas& getManejadorRecetas() { return manejadorRecetas; }
     bool estaCorriendoApp() const { return estaCorriendo; }
     

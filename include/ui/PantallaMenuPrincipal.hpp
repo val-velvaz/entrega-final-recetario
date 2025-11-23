@@ -1,7 +1,8 @@
-#pragma once
+﻿#pragma once
 #include "ui/GameState.hpp"
-#include "Game.hpp"
-#include "ui/Boton.hpp" // Importante
+#include "ui/Boton.hpp"
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 class PantallaMenuPrincipal : public GameState {
 private:
@@ -9,18 +10,19 @@ private:
     SDL_Texture* texturaTitulo;
     SDL_FRect rectTitulo;
 
-    // Botones encapsulados
     Boton* btnAgregar;
     Boton* btnVer;
     Boton* btnSalir;
+    Boton* btnHerramientas;
 
 public:
     PantallaMenuPrincipal();
-    virtual ~PantallaMenuPrincipal();
+    ~PantallaMenuPrincipal();
 
-    virtual void init(Game& game) override;
-    virtual void cleanup() override;
-    virtual void handleEvents(Game& game) override;
-    virtual void update(Game& game) override;
-    virtual void render(Game& game) override;
+    void init(Game& game) override;
+    void cleanup() override;
+
+    void handleEvents(Game& game) override;
+    void update(Game& game) override;
+    void render(Game& game) override;
 };

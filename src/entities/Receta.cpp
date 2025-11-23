@@ -1,6 +1,7 @@
-#include "entities/Receta.hpp"
+﻿#include "entities/Receta.hpp"
 #include "utils/ConvertidoresFormatos.hpp"
 #include <sstream>
+#include <limits> // Para std::numeric_limits
 
 Receta::Receta()
     : nombrePlatillo("Sin nombre"),
@@ -15,7 +16,8 @@ Receta::Receta(const std::string& nombrePlatillo_,
             const Nombre& autor,
             const Categoria& categoria,
             int tiempoMinutos,
-            const std::string& procedimiento)
+            
+const std::string& procedimiento)
     : nombrePlatillo(nombrePlatillo_),
         autorReceta(autor),
         categoriaReceta(categoria),
@@ -31,7 +33,8 @@ Receta::Receta(const Receta& otraReceta)
         tiempoPreparacionMinutos(otraReceta.tiempoPreparacionMinutos),
         procedimientoPasos(otraReceta.procedimientoPasos),
         ingredientesListaOrdenada(otraReceta.ingredientesListaOrdenada),
-        rutaImagenPlatillo(otraReceta.rutaImagenPlatillo) {
+     
+    rutaImagenPlatillo(otraReceta.rutaImagenPlatillo) {
 }
 
 Receta::Receta(Receta&& otraReceta) noexcept //c++11
@@ -174,20 +177,20 @@ std::string Receta::obtenerResumenCorto() const {
 std::string Receta::obtenerDetalleCompleto() const {
     std::stringstream detalle;
     
-    detalle << "╔════════════════════════════════════════╗\n";
-    detalle << "║  RECETA: " << nombrePlatillo << "\n";
-    detalle << "╚════════════════════════════════════════╝\n";
+    detalle << "+----------------------------------------+\n";
+    detalle << "¦  RECETA: " << nombrePlatillo << "\n";
+    detalle << "+----------------------------------------+\n";
     detalle << "Autor: " << autorReceta.obtenerNombreCompleto() << "\n";
     detalle << "Categoría: " << categoriaATexto(categoriaReceta) << "\n";
     detalle << "Tiempo de Preparación: " << tiempoPreparacionMinutos << " minutos\n\n";
     
-    detalle << "─── INGREDIENTES ───\n";
+    detalle << "--- INGREDIENTES ---\n";
     for (int i = 0; i < ingredientesListaOrdenada.obtenerCantidadElementos(); ++i) {
         const Ingrediente& ing = ingredientesListaOrdenada.obtenerEnPosicion(i);
         detalle << "  • " << ing.obtenerRepresentacionFormateada() << "\n";
     }
     
-    detalle << "\n─── PROCEDIMIENTO ───\n";
+    detalle << "\n--- PROCEDIMIENTO ---\n";
     detalle << procedimientoPasos << "\n";
     
     return detalle.str();
@@ -206,28 +209,43 @@ std::ostream& operator<<(std::ostream& salida, const Receta& receta) {
     } return salida;
 }
 
+// CORRECCIÓN CRÍTICA: Consumir robustamente el newline después de cada lectura numérica
 std::istream& operator>>(std::istream& entrada, Receta& receta) {
+    receta.ingredientesListaOrdenada.limpiarLista();
+
     std::getline(entrada, receta.nombrePlatillo);
     entrada >> receta.autorReceta;
     
     int categoriaInt;
     entrada >> categoriaInt;
-    entrada.ignore();
+    // CRÍTICO: Consumir el resto de la línea después de la lectura numérica
+    entrada.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     receta.categoriaReceta = static_cast<Categoria>(categoriaInt);
     
     entrada >> receta.tiempoPreparacionMinutos;
-    entrada.ignore();
+    // CRÍTICO: Consumir el resto de la línea después de la lectura numérica
+    entrada.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::getline(entrada, receta.procedimientoPasos);
     
     std::getline(entrada, receta.rutaImagenPlatillo);
     
-    int cantidadIngredientes;
-    entrada >> cantidadIngredientes;
-    entrada.ignore();
+    int cantidadIngredientes = 0;
+    // Debemos verificar si la lectura fue exitosa antes de usar el valor
+    if (!(entrada >> cantidadIngredientes)) {
+        return entrada;
+    }
+    // CRÍTICO: Consumir el resto de la línea después de la lectura numérica
+    entrada.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     
     for (int i = 0; i < cantidadIngredientes; ++i) {
         Ingrediente ing;
         entrada >> ing;
-        receta.ingredientesListaOrdenada.agregarAlFinal(ing);
-    } return entrada;
+        if (!entrada.fail()) {
+            receta.ingredientesListaOrdenada.agregarAlFinal(ing);
+        } else {
+            entrada.clear();
+            break;
+        }
+    } 
+    return entrada;
 }

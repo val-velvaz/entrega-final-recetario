@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "NodoDoblementeLigado.hpp"
 #include <stdexcept>

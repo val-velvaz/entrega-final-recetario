@@ -1,24 +1,48 @@
-#include "DatosPruebaRecetario.hpp"
+﻿#include "DatosPruebaRecetario.hpp"
+#include <iostream>
 
 ListaDoblementeLigada<Receta> DatosPruebaRecetario::obtenerRecetasDeEjemplo() {
-    ListaDoblementeLigada<Receta> recetas;
+    ListaDoblementeLigada<Receta> baseRecetas;
     
-    recetas.agregarAlFinal(crearChilaquilesVerdes());
-    recetas.agregarAlFinal(crearMolePolano());
-    recetas.agregarAlFinal(crearPozoleRojo());
-    recetas.agregarAlFinal(crearTamalesDeRajas());
-    recetas.agregarAlFinal(crearEnchaladasSuizas());
-    recetas.agregarAlFinal(crearCarneAsada());
-    recetas.agregarAlFinal(crearQuesadillasFlordeCalabazo());
-    recetas.agregarAlFinal(crearChilesRellenos());
-    recetas.agregarAlFinal(crearCochinitaPibil());
-    recetas.agregarAlFinal(crearPastelTresLeches());
-    recetas.agregarAlFinal(crearSopaDeTortilla());
-    recetas.agregarAlFinal(crearFajitasDePollo());
+    // Generar las 12 recetas base para copiar
+    baseRecetas.agregarAlFinal(crearChilaquilesVerdes());
+    baseRecetas.agregarAlFinal(crearMolePolano());
+    baseRecetas.agregarAlFinal(crearPozoleRojo());
+    baseRecetas.agregarAlFinal(crearTamalesDeRajas());
+    baseRecetas.agregarAlFinal(crearEnchaladasSuizas());
+    baseRecetas.agregarAlFinal(crearCarneAsada());
+    baseRecetas.agregarAlFinal(crearQuesadillasFlordeCalabazo());
+    baseRecetas.agregarAlFinal(crearChilesRellenos());
+    baseRecetas.agregarAlFinal(crearCochinitaPibil());
+    baseRecetas.agregarAlFinal(crearPastelTresLeches());
+    baseRecetas.agregarAlFinal(crearSopaDeTortilla());
+    baseRecetas.agregarAlFinal(crearFajitasDePollo());
     
-    return recetas;
+    ListaDoblementeLigada<Receta> recetasFinales;
+    int baseCount = baseRecetas.obtenerCantidadElementos();
+
+    // Loop para generar 1000 registros (1000 / 12 ~ 83 ciclos)
+    for(int i = 0; i < 84; ++i) { 
+        for(int j = 0; j < baseCount; ++j) {
+            if (recetasFinales.obtenerCantidadElementos() >= 1000) break;
+
+            // Copiar la receta base
+            Receta r = baseRecetas.obtenerEnPosicion(j); 
+            
+            // Modificar el nombre para que no haya duplicados (Ej: 'Pozole Rojo (84)')
+            r.establecerNombrePlatillo(r.obtenerNombrePlatillo() + " (" + std::to_string(i) + ")");
+            
+            recetasFinales.agregarAlFinal(r);
+        }
+        if (recetasFinales.obtenerCantidadElementos() >= 1000) break;
+    }
+    
+    std::cout << "[INFO] Generados " << recetasFinales.obtenerCantidadElementos() << " registros de prueba." << std::endl;
+
+    return recetasFinales;
 }
 
+// ... (Resto de las funciones crearXyz igual que antes)
 Receta DatosPruebaRecetario::crearChilaquilesVerdes() {
     Nombre autorChilaquiles("Maria", "Garcia", "Lopez");
     Receta chilaquiles("Chilaquiles Verdes", autorChilaquiles, Categoria::DESAYUNO, 25,
@@ -39,7 +63,6 @@ Receta DatosPruebaRecetario::crearChilaquilesVerdes() {
     chilaquiles.agregarIngredienteOrdenado(Ingrediente("Sal", "1", "cucharadita"));
     chilaquiles.agregarIngredienteOrdenado(Ingrediente("Tortillas de maíz", "12", "piezas"));
     chilaquiles.agregarIngredienteOrdenado(Ingrediente("Tomatillo verde", "500", "gramos"));
-
     return chilaquiles;
 }
 Receta DatosPruebaRecetario::crearMolePolano() {
@@ -68,10 +91,8 @@ Receta DatosPruebaRecetario::crearMolePolano() {
     mole.agregarIngredienteOrdenado(Ingrediente("Mermelada", "1", "cucharada"));
     mole.agregarIngredienteOrdenado(Ingrediente("Pasita", "1/4", "taza"));
     mole.agregarIngredienteOrdenado(Ingrediente("Pechuga de pollo", "1", "pieza"));
-
     return mole;
 }
-
 Receta DatosPruebaRecetario::crearPozoleRojo() {
     Nombre autorPozole("Carmen", "Ruiz", "Hernandez");
     Receta pozole("Pozole Rojo", autorPozole, Categoria::COMIDA, 90,
@@ -97,10 +118,8 @@ Receta DatosPruebaRecetario::crearPozoleRojo() {
     pozole.agregarIngredienteOrdenado(Ingrediente("Orégano seco", "1", "cucharada"));
     pozole.agregarIngredienteOrdenado(Ingrediente("Sal", "2", "cucharaditas"));
     pozole.agregarIngredienteOrdenado(Ingrediente("Tostadas", "150", "gramos"));
-
     return pozole;
 }
-
 Receta DatosPruebaRecetario::crearTamalesDeRajas() {
     Nombre autorTamales("Ana", "Flores", "Cruz");
     Receta tamales("Tamales de Rajas", autorTamales, Categoria::DESAYUNO, 45,
@@ -111,7 +130,6 @@ Receta DatosPruebaRecetario::crearTamalesDeRajas() {
         "5. Rellenar las hojas con masa y chile\n"
         "6. Cocer al vapor por 45 minutos\n"
         "7. Servir con salsa fresca");
-
     tamales.agregarIngredienteOrdenado(Ingrediente("Agua", "1.5", "tazas"));
     tamales.agregarIngredienteOrdenado(Ingrediente("Ajo", "2", "dientes"));
     tamales.agregarIngredienteOrdenado(Ingrediente("Caldo de pollo", "2", "tazas"));
@@ -124,7 +142,6 @@ Receta DatosPruebaRecetario::crearTamalesDeRajas() {
     tamales.agregarIngredienteOrdenado(Ingrediente("Polvo de hornear", "1", "cucharadita"));
     tamales.agregarIngredienteOrdenado(Ingrediente("Queso Oaxaca", "300", "gramos"));
     tamales.agregarIngredienteOrdenado(Ingrediente("Sal", "1", "cucharadita"));
-
     return tamales;
 }
 Receta DatosPruebaRecetario::crearEnchaladasSuizas() {
@@ -152,10 +169,8 @@ Receta DatosPruebaRecetario::crearEnchaladasSuizas() {
     enchaladas.agregarIngredienteOrdenado(Ingrediente("Sal", "1", "cucharadita"));
     enchaladas.agregarIngredienteOrdenado(Ingrediente("Tomate", "4", "piezas"));
     enchaladas.agregarIngredienteOrdenado(Ingrediente("Tortillas de maíz", "12", "piezas"));
-
     return enchaladas;
 }
-
 Receta DatosPruebaRecetario::crearCarneAsada() {
     Nombre autorCarne("Javier", "Moreno", "Ramirez");
     Receta carneAsada("Carne Asada", autorCarne, Categoria::COMIDA, 30,
@@ -166,7 +181,6 @@ Receta DatosPruebaRecetario::crearCarneAsada() {
         "5. Asar la carne 5 minutos cada lado\n"
         "6. Reposar 5 minutos\n"
         "7. Servir con tortillas y salsa");
-
     carneAsada.agregarIngredienteOrdenado(Ingrediente("Aceite de oliva", "1/4", "taza"));
     carneAsada.agregarIngredienteOrdenado(Ingrediente("Ajo molido", "4", "dientes"));
     carneAsada.agregarIngredienteOrdenado(Ingrediente("Carne de res", "1", "kilogramo"));
@@ -177,10 +191,8 @@ Receta DatosPruebaRecetario::crearCarneAsada() {
     carneAsada.agregarIngredienteOrdenado(Ingrediente("Orégano seco", "1", "cucharada"));
     carneAsada.agregarIngredienteOrdenado(Ingrediente("Pimienta negra", "1", "cucharadita"));
     carneAsada.agregarIngredienteOrdenado(Ingrediente("Sal", "1", "cucharada"));
-
     return carneAsada;
 }
-
 Receta DatosPruebaRecetario::crearQuesadillasFlordeCalabazo() {
     Nombre autorQuesadillas("Erica", "Dominguez", "Perez");
     Receta quesadillas("Quesadillas de Flor de Calabaza", autorQuesadillas, Categoria::DESAYUNO, 20,
@@ -201,7 +213,6 @@ Receta DatosPruebaRecetario::crearQuesadillasFlordeCalabazo() {
     quesadillas.agregarIngredienteOrdenado(Ingrediente("Queso Oaxaca", "200", "gramos"));
     quesadillas.agregarIngredienteOrdenado(Ingrediente("Sal", "1", "cucharadita"));
     quesadillas.agregarIngredienteOrdenado(Ingrediente("Tortillas de maíz", "8", "piezas"));
-
     return quesadillas;
 }
 Receta DatosPruebaRecetario::crearChilesRellenos() {
@@ -215,7 +226,6 @@ Receta DatosPruebaRecetario::crearChilesRellenos() {
         "6. Batir las claras\n"
         "7. Freír los chiles capados\n"
         "8. Servir cubiertos con salsa");
-
     chiles.agregarIngredienteOrdenado(Ingrediente("Aceite para freír", "500", "mililitros"));
     chiles.agregarIngredienteOrdenado(Ingrediente("Ajo", "2", "dientes"));
     chiles.agregarIngredienteOrdenado(Ingrediente("Caldo de pollo", "1", "taza"));
@@ -227,10 +237,8 @@ Receta DatosPruebaRecetario::crearChilesRellenos() {
     chiles.agregarIngredienteOrdenado(Ingrediente("Sal", "1", "cucharadita"));
     chiles.agregarIngredienteOrdenado(Ingrediente("Yemas de huevo", "6", "piezas"));
     chiles.agregarIngredienteOrdenado(Ingrediente("Chile poblano", "10", "piezas"));
-
     return chiles;
 }
-
 Receta DatosPruebaRecetario::crearCochinitaPibil() {
     Nombre autorCochinita("Ignacio", "Martinez", "Soto");
     Receta cochinita("Cochinita Pibil", autorCochinita, Categoria::COMIDA, 180,
@@ -242,7 +250,6 @@ Receta DatosPruebaRecetario::crearCochinitaPibil() {
         "6. Hornear 3 horas a 160°C\n"
         "7. Desmuzar la carne\n"
         "8. Servir con tortillas y cebolla morada");
-
     cochinita.agregarIngredienteOrdenado(Ingrediente("Achiote", "3", "cucharadas"));
     cochinita.agregarIngredienteOrdenado(Ingrediente("Agua", "1/2", "taza"));
     cochinita.agregarIngredienteOrdenado(Ingrediente("Ajo", "8", "dientes"));
@@ -255,10 +262,8 @@ Receta DatosPruebaRecetario::crearCochinitaPibil() {
     cochinita.agregarIngredienteOrdenado(Ingrediente("Paleta de cerdo", "2", "kilogramos"));
     cochinita.agregarIngredienteOrdenado(Ingrediente("Pimienta", "1", "cucharadita"));
     cochinita.agregarIngredienteOrdenado(Ingrediente("Sal", "2", "cucharaditas"));
-
     return cochinita;
 }
-
 Receta DatosPruebaRecetario::crearPastelTresLeches() {
     Nombre autorPastel("Valentina", "Solis", "Navarro");
     Receta pastel("Pastel de Tres Leches", autorPastel, Categoria::NAVIDENO, 40,
@@ -270,7 +275,6 @@ Receta DatosPruebaRecetario::crearPastelTresLeches() {
         "6. Preparar la crema batida\n"
         "7. Cubrir el pastel\n"
         "8. Decorar con fresas y refrigerar");
-
     pastel.agregarIngredienteOrdenado(Ingrediente("Azúcar", "1", "taza"));
     pastel.agregarIngredienteOrdenado(Ingrediente("Claras de huevo", "5", "piezas"));
     pastel.agregarIngredienteOrdenado(Ingrediente("Crema Evaporada", "1", "lata"));
@@ -282,7 +286,6 @@ Receta DatosPruebaRecetario::crearPastelTresLeches() {
     pastel.agregarIngredienteOrdenado(Ingrediente("Leche condensada", "1", "lata"));
     pastel.agregarIngredienteOrdenado(Ingrediente("Polvo de hornear", "1", "cucharadita"));
     pastel.agregarIngredienteOrdenado(Ingrediente("Yema de huevo", "5", "piezas"));
-
     return pastel;
 }
 Receta DatosPruebaRecetario::crearSopaDeTortilla() {
@@ -296,7 +299,6 @@ Receta DatosPruebaRecetario::crearSopaDeTortilla() {
         "6. Freír las tiras de tortilla\n"
         "7. Verter caldo sobre tortillas\n"
         "8. Agregar aguacate, queso y crema");
-
     sopa.agregarIngredienteOrdenado(Ingrediente("Aguacate", "1", "pieza"));
     sopa.agregarIngredienteOrdenado(Ingrediente("Ajo", "2", "dientes"));
     sopa.agregarIngredienteOrdenado(Ingrediente("Caldo de pollo", "2", "litros"));
@@ -308,10 +310,8 @@ Receta DatosPruebaRecetario::crearSopaDeTortilla() {
     sopa.agregarIngredienteOrdenado(Ingrediente("Queso fresco", "150", "gramos"));
     sopa.agregarIngredienteOrdenado(Ingrediente("Sal", "1", "cucharadita"));
     sopa.agregarIngredienteOrdenado(Ingrediente("Tortillas de maíz", "8", "piezas"));
-
     return sopa;
 }
-
 Receta DatosPruebaRecetario::crearFajitasDePollo() {
     Nombre autorFajitas("Fernando", "Castillo", "Romero");
     Receta fajitas("Fajitas de Pollo", autorFajitas, Categoria::COMIDA, 45,
@@ -323,7 +323,6 @@ Receta DatosPruebaRecetario::crearFajitasDePollo() {
         "6. Asar pollo 8 minutos\n"
         "7. Asar verduras\n"
         "8. Servir con tortillas calientes");
-
     fajitas.agregarIngredienteOrdenado(Ingrediente("Aceite de oliva", "3", "cucharadas"));
     fajitas.agregarIngredienteOrdenado(Ingrediente("Ajo", "3", "dientes"));
     fajitas.agregarIngredienteOrdenado(Ingrediente("Cebolla", "2", "piezas"));
@@ -337,6 +336,5 @@ Receta DatosPruebaRecetario::crearFajitasDePollo() {
     fajitas.agregarIngredienteOrdenado(Ingrediente("Pollo pechuga", "1", "kilogramo"));
     fajitas.agregarIngredienteOrdenado(Ingrediente("Sal", "1", "cucharada"));
     fajitas.agregarIngredienteOrdenado(Ingrediente("Tortillas de trigo", "16", "piezas"));
-
     return fajitas;
 }

@@ -1,0 +1,56 @@
+﻿#pragma once
+
+#include "entities/Receta.hpp"
+#include "datastructures/templates/ListaDoblementeLigada.hpp"
+#include <string>
+#include <vector>
+#include <stdexcept>
+
+class ManejadorRecetas {
+private:
+    ListaDoblementeLigada<Receta> recetasAlmacenadas;
+
+    int encontrarIndiceRecetaPorNombre(const std::string& nombreBuscado) const;
+    
+    // Algoritmos Internos
+    int particion(ListaDoblementeLigada<Receta>& lista, int izquierda, int derecha, int (*comparador)(const Receta&, const Receta&));
+    
+    void quickSortRecursivo(
+        ListaDoblementeLigada<Receta>& lista,
+        int izquierda,
+        int derecha,
+        int (*comparador)(const Receta&, const Receta&)
+    );
+
+public:
+    ManejadorRecetas();
+    ~ManejadorRecetas();
+
+    // CRUD Básico
+    void agregarRecetaNueva(const Receta& recetaAinsertar);
+    Receta& obtenerRecetaPorNombre(const std::string& nombreBuscado);
+    const Receta& obtenerRecetaPorNombreConstante(const std::string& nombreBuscado) const;
+    void eliminarRecetaPorNombre(const std::string& nombreAeliminar);
+    void eliminarTodasLasRecetas();
+    bool verificarSiRecetaExiste(const std::string& nombreReceta) const;
+
+    // Métodos de Lista
+    int obtenerCantidadRecetas() const { return recetasAlmacenadas.obtenerCantidadElementos(); }
+    Receta& obtenerRecetaEnPosicion(int indice) { return recetasAlmacenadas.obtenerEnPosicion(indice); }
+    const Receta& obtenerRecetaEnPosicion(int indice) const { return recetasAlmacenadas.obtenerEnPosicion(indice); }
+
+    // ORDENAMIENTO (QuickSort)
+    void ordenarRecetasPorNombre();
+    void ordenarRecetasPorTiempoPreparacion();
+    void ordenarRecetasPorCategoria();
+    void ordenarRecetasPorAutor();
+
+    // BÚSQUEDA (Binary Search)
+    // Retorna puntero a la receta encontrada o nullptr si no existe
+    Receta* buscarRecetaBinariaPorNombre(const std::string& nombreBuscado);
+
+    // Persistencia
+    void guardarRecetasAarchivo(const std::string& rutaArchivo);
+    void cargarRecetasDesdeArchivo(const std::string& rutaArchivo);
+    std::string obtenerEstadisticasRecetario() const;
+};
