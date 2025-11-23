@@ -1,34 +1,32 @@
-#pragma once
+﻿#pragma once
 #include "ui/GameState.hpp"
+#include "ui/Boton.hpp"
 #include "entities/Receta.hpp"
-#include "ui/Boton.hpp" // Asumo que tienes este header o el .o
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
 class PantallaDetalleReceta : public GameState {
 private:
-    Receta recetaActual; // Copia local o referencia segura
-    
+    Receta recetaAMostrar;
+
     TTF_Font* fuenteTitulo;
+    TTF_Font* fuenteSubtitulo;
     TTF_Font* fuenteTexto;
-    
+
     SDL_Texture* texTitulo;
-    SDL_Texture* texIngredientes;
-    SDL_Texture* texProcedimiento;
-    SDL_Texture* texImagenPlatillo; // La foto
-
     SDL_FRect rectTitulo;
-    SDL_FRect rectContenido;
-    SDL_FRect rectImagen;
+    
+    // IMAGEN
+    SDL_Texture* texImagenPlatillo;
+    SDL_FRect rectImagenPlatillo;
 
-    // Botón para volver
-    SDL_Texture* texBotonVolver;
-    SDL_FRect rectBotonVolver;
+    Boton* btnVolver;
 
-    void generarTexturasTexto(SDL_Renderer* renderer);
+    void renderizarInfoGeneral(SDL_Renderer* renderer, int w);
+    void renderizarIngredientes(SDL_Renderer* renderer, int w);
+    void renderizarProcedimiento(SDL_Renderer* renderer, int w, int h);
 
 public:
-    // Constructor que recibe la receta a mostrar
     PantallaDetalleReceta(const Receta& receta);
     ~PantallaDetalleReceta();
 

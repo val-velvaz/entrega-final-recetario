@@ -1,71 +1,62 @@
-# --- CONFIGURACIÓN DEL COMPILADOR ---
+﻿# --- CONFIGURACIÓN DEL COMPILADOR ---
 CXX = g++.exe
 
+# --- CONFIGURACIÓN DE DIRECTORIOS ---
+SRC_DIR = src
+OBJ_DIR = obj
+BIN_DIR = output
+LIB_DIR = lib
+
 # --- CONFIGURACIÓN DEL PROYECTO ---
-TARGET = output/recetario_game.exe
+TARGET = $(BIN_DIR)/recetario_game.exe
 
 # --- CONFIGURACIÓN DE LIBRERÍAS ---
-SDL3_DIR = lib/SDL3/x86_64-w64-mingw32
-SDL_TTF_DIR = lib/SDL_ttf/x86_64-w64-mingw32
-SDL3_image_DIR = lib/SDL3_image/x86_64-w64-mingw32
+SDL3_PATH = $(LIB_DIR)/SDL3/x86_64-w64-mingw32
+SDL_TTF_PATH = $(LIB_DIR)/SDL_ttf/x86_64-w64-mingw32
+SDL_IMG_PATH = $(LIB_DIR)/SDL3_image/x86_64-w64-mingw32
 
-INCLUDES = -Iinclude -I$(SDL3_DIR)/include -I$(SDL_TTF_DIR)/include -I$(SDL3_image_DIR)/include
-LIBS = -L$(SDL3_DIR)/lib -L$(SDL_TTF_DIR)/lib -L$(SDL3_image_DIR)/lib -lSDL3_image -lSDL3_ttf -lSDL3
+INCLUDES = -Iinclude -I$(SDL3_PATH)/include -I$(SDL_TTF_PATH)/include -I$(SDL_IMG_PATH)/include
+LIBS = -L$(SDL3_PATH)/lib -L$(SDL_TTF_PATH)/lib -L$(SDL_IMG_PATH)/lib -lSDL3_image -lSDL3_ttf -lSDL3
 
 # --- BANDERAS (FLAGS) ---
-CXXFLAGS = -std=c++14 $(INCLUDES) -m64 -Wall -Wextra
-LDFLAGS = $(LIBS)
+CXXFLAGS = -std=c++17 $(INCLUDES) -m64 -Wall -Wextra -g
 
 # --- BÚSQUEDA RECURSIVA DE ARCHIVOS ---
-SOURCES = $(shell find src -name '*.cpp')
-OBJECTS = $(SOURCES:.cpp=.o)
-HEADERS = $(shell find include -name '*.hpp')
+# Nota: En Windows MSYS2, 'find' funciona bien. Si falla, usaremos wildcard.
+SOURCES = $(shell find $(SRC_DIR) -name '*.cpp')
+OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 # --- REGLAS PRINCIPALES ---
-.PHONY: all clean run force rebuild check info
+.PHONY: all clean fresh run directories
 
-all: $(TARGET)
+all: directories $(TARGET)
 
 $(TARGET): $(OBJECTS)
 	@echo "=== ENLAZANDO EJECUTABLE ==="
-	$(CXX) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
-	@echo "COMPILACION EXITOSA: $(TARGET)"
-	@ls -lh $(TARGET)
+	$(CXX) -o $@ $^ $(LIBS)
+	@echo "COMPILACION EXITOSA: $@"
+	@echo "Copiando DLLs necesarias..."
+	@cp $(SDL3_PATH)/bin/*.dll $(BIN_DIR)/ 2>/dev/null || true
+	@cp $(SDL_TTF_PATH)/bin/*.dll $(BIN_DIR)/ 2>/dev/null || true
+	@cp $(SDL_IMG_PATH)/bin/*.dll $(BIN_DIR)/ 2>/dev/null || true
 
-%.o: %.cpp
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(dir $@)
 	@echo "Compilando: $<"
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+directories:
+	@mkdir -p $(OBJ_DIR)
+	@mkdir -p $(BIN_DIR)
+
 clean:
 	@echo "Limpiando..."
-	rm -f $(OBJECTS) $(TARGET)
-	@echo "Limpieza completa"
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	@echo "Limpieza completa."
 
-force: clean all
-
-rebuild:
-	@echo "Recompilando archivos modificados..."
-	$(MAKE) all
+fresh: clean all
 
 run: all
 	@echo "Ejecutando programa..."
 	@echo "========================================"
 	./$(TARGET)
-
-check:
-	@echo "Archivos fuente:"
-	@ls -lh $(SOURCES) | tail -5
-	@echo ""
-	@echo "Archivos objeto:"
-	@ls -lh $(OBJECTS) | tail -5
-	@echo ""
-	@echo "Ejecutable:"
-	@ls -lh $(TARGET) || echo "No existe"
-
-info:
-	@echo "Compilador: $(CXX)"
-	@echo "Target: $(TARGET)"
-	@echo "Archivos fuente: $(words $(SOURCES))"
-	@echo "Flags: $(CXXFLAGS)"
-	@echo ""
-	@find src -name "*.cpp" | head -10

@@ -1,13 +1,16 @@
-#include "ui/PantallaMenuPrincipal.hpp"
+﻿#include "ui/PantallaMenuPrincipal.hpp"
 #include "ui/PantallaVisualizarRecetas.hpp"
-// Si tienes PantallaAgregar, inclúyela: #include "ui/PantallaAgregarReceta.hpp"
+#include "ui/PantallaAgregarReceta.hpp"
+#include "ui/PantallaSalida.hpp" // <--- NUEVO INCLUDE
+#include "Game.hpp"
 #include "persistence/RutasAssets.hpp"
+#include "utils/RenderizadorTextos.hpp"
 #include <iostream>
-#include <stdexcept>
+#include <cmath>
 
 PantallaMenuPrincipal::PantallaMenuPrincipal() 
     : fuenteTitulo(nullptr), texturaTitulo(nullptr), 
-      btnAgregar(nullptr), btnVer(nullptr), btnSalir(nullptr) {}
+      btnAgregar(nullptr), btnVer(nullptr), btnSalir(nullptr), btnHerramientas(nullptr) {}
 
 PantallaMenuPrincipal::~PantallaMenuPrincipal() {
     cleanup();
@@ -18,41 +21,36 @@ void PantallaMenuPrincipal::init(Game& game) {
     int ancho, alto;
     SDL_GetRenderOutputSize(renderer, &ancho, &alto);
 
-    // 1. Título
     fuenteTitulo = TTF_OpenFont(RutasAssets::obtenerRutaFuenteNegrita().c_str(), 48);
-    if (fuenteTitulo) {
-        SDL_Color color = { 80, 80, 80, 255 };
-        SDL_Surface* sup = TTF_RenderText_Blended(fuenteTitulo, "RECETARIO DE LA ABUELA", 0, color);
-        if (sup) {
-            texturaTitulo = SDL_CreateTextureFromSurface(renderer, sup);
-            rectTitulo = { (float)(ancho - sup->w)/2.0f, 80.0f, (float)sup->w, (float)sup->h };
-            SDL_DestroySurface(sup);
-        }
+    SDL_Color color = { 80, 80, 80, 255 };
+    
+    texturaTitulo = RenderizadorTextos::renderizarTexto(renderer, fuenteTitulo, "RECETARIO", color);
+    
+    if (texturaTitulo) {
+        rectTitulo.x = (ancho - texturaTitulo->w)/2.0f;
+        rectTitulo.y = 100.0f;
+        rectTitulo.w = (float)texturaTitulo->w;
+        rectTitulo.h = (float)texturaTitulo->h;
     }
 
-    // 2. Botones (Usando la clase Boton)
-    float tam = 100.0f;
+    float tam = 120.0f;
     float esp = 50.0f;
-    float xIni = (ancho - (tam*3 + esp*2)) / 2.0f;
-    float yBtn = 300.0f;
+    float xCenter = (ancho / 2.0f) - (tam / 2.0f);
+    float yStart = 300.0f;
 
-    btnAgregar = new Boton(renderer, RutasAssets::obtenerRutaIconoBotonAgregar(), xIni, yBtn, tam, tam);
-    btnVer     = new Boton(renderer, RutasAssets::obtenerRutaIconoBotonGuardar(), xIni + tam + esp, yBtn, tam, tam);
-    btnSalir   = new Boton(renderer, RutasAssets::obtenerRutaIconoBotonEliminar(), xIni + (tam + esp)*2, yBtn, tam, tam);
+    btnAgregar = new Boton(renderer, RutasAssets::obtenerRutaIconoBotonAgregar(), xCenter - tam - esp, yStart, tam, tam);
+    btnVer = new Boton(renderer, RutasAssets::obtenerRutaIconoBotonGuardar(), xCenter, yStart, tam, tam);
+    btnSalir = new Boton(renderer, RutasAssets::obtenerRutaIconoBotonEliminar(), xCenter + tam + esp, yStart, tam, tam);
+    btnHerramientas = nullptr; 
 }
 
 void PantallaMenuPrincipal::cleanup() {
-    if (texturaTitulo) SDL_DestroyTexture(texturaTitulo);
-    if (fuenteTitulo) TTF_CloseFont(fuenteTitulo);
+    if (texturaTitulo) { SDL_DestroyTexture(texturaTitulo); texturaTitulo = nullptr; }
+    if (fuenteTitulo) { TTF_CloseFont(fuenteTitulo); fuenteTitulo = nullptr; }
     
-    // Los botones se limpian solos al hacer delete
-    delete btnAgregar;
-    delete btnVer;
-    delete btnSalir;
-    
-    btnAgregar = nullptr;
-    btnVer = nullptr;
-    btnSalir = nullptr;
+    if (btnAgregar) { delete btnAgregar; btnAgregar = nullptr; }
+    if (btnVer) { delete btnVer; btnVer = nullptr; }
+    if (btnSalir) { delete btnSalir; btnSalir = nullptr; }
 }
 
 void PantallaMenuPrincipal::handleEvents(Game& game) {
@@ -67,27 +65,56 @@ void PantallaMenuPrincipal::handleEvents(Game& game) {
                 float my = evento.button.y;
 
                 if (btnSalir && btnSalir->estaPresionado(mx, my)) {
-                    game.setEstaCorriendo(false);
+                    // CAMBIO: Ir a PantallaSalida en lugar de cerrar directo
+                    game.cambiarEstado(new PantallaSalida());
                 }
                 else if (btnVer && btnVer->estaPresionado(mx, my)) {
-                    game.cambiarEstado(new PantallaVisualizarRecetas());
+                    game.pushEstado(new PantallaVisualizarRecetas());
                 }
                 else if (btnAgregar && btnAgregar->estaPresionado(mx, my)) {
-                   std::cout << "Ir a agregar..." << std::endl;
-                   // game.cambiarEstado(new PantallaAgregarReceta());
+                   game.pushEstado(new PantallaAgregarReceta());
                 }
             }
         }
     }
 }
 
-void PantallaMenuPrincipal::update(Game& game) {}
+void PantallaMenuPrincipal::update(Game& game) {
+    (void)game;
+    if (btnAgregar) btnAgregar->actualizar();
+    if (btnVer) btnVer->actualizar();
+    if (btnSalir) btnSalir->actualizar();
+
+    float tiempo = SDL_GetTicks() / 1000.0f;
+    float desplazamiento = std::sin(tiempo * 2.0f) * 10.0f;
+    rectTitulo.y = 100.0f + desplazamiento;
+}
 
 void PantallaMenuPrincipal::render(Game& game) {
-    SDL_Renderer* renderer = game.getRenderer();
-    if (texturaTitulo) SDL_RenderTexture(renderer, texturaTitulo, nullptr, &rectTitulo);
+    SDL_Renderer* r = game.getRenderer();
+    int w, h;
+    SDL_GetRenderOutputSize(r, &w, &h);
     
-    if (btnAgregar) btnAgregar->render(renderer);
-    if (btnVer) btnVer->render(renderer);
-    if (btnSalir) btnSalir->render(renderer);
+    // Fondo Rosa Pastel (Mantenemos el diseño anterior)
+    SDL_SetRenderDrawColor(r, 255, 228, 235, 255);
+    SDL_FRect bg = {0, 0, (float)w, (float)h};
+    SDL_RenderFillRect(r, &bg);
+
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(r, 255, 182, 193, 100);
+
+    float tiempo = SDL_GetTicks() / 50.0f;
+    float offset = fmod(tiempo, 100.0f);
+    
+    for (float i = -100; i < w + h; i += 100) {
+        SDL_FRect stripe = { i + offset, 0, 40, (float)h };
+        SDL_RenderFillRect(r, &stripe); 
+    }
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
+
+    if (texturaTitulo) SDL_RenderTexture(r, texturaTitulo, nullptr, &rectTitulo);
+    
+    if (btnAgregar) btnAgregar->render(r);
+    if (btnVer) btnVer->render(r);
+    if (btnSalir) btnSalir->render(r);
 }

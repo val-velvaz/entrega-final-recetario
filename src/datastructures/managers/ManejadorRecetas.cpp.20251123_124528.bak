@@ -1,0 +1,193 @@
+﻿#include "datastructures/managers/ManejadorRecetas.hpp"
+#include <stdexcept>
+#include <fstream>
+#include <limits>
+#include <sstream>
+#include <iostream>
+#include <future>
+#include <chrono>
+
+ManejadorRecetas::ManejadorRecetas() {}
+ManejadorRecetas::~ManejadorRecetas() {}
+
+// --- AUXILIARES ---
+
+int ManejadorRecetas::encontrarIndiceRecetaPorNombre(const std::string& nombreBuscado) const {
+    for (int i = 0; i < recetasAlmacenadas.obtenerCantidadElementos(); ++i) {
+        if (recetasAlmacenadas.obtenerEnPosicion(i).obtenerNombrePlatillo() == nombreBuscado) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// --- CRUD ---
+
+void ManejadorRecetas::agregarRecetaNueva(const Receta& recetaAinsertar) {
+    if (verificarSiRecetaExiste(recetaAinsertar.obtenerNombrePlatillo())) {
+        throw std::runtime_error("Ya existe: " + recetaAinsertar.obtenerNombrePlatillo());
+    }
+    recetasAlmacenadas.agregarAlFinal(recetaAinsertar);
+}
+
+Receta& ManejadorRecetas::obtenerRecetaPorNombre(const std::string& nombreBuscado) {
+    int idx = encontrarIndiceRecetaPorNombre(nombreBuscado);
+    if (idx == -1) throw std::runtime_error("No encontrada: " + nombreBuscado);
+    return recetasAlmacenadas.obtenerEnPosicion(idx);
+}
+
+const Receta& ManejadorRecetas::obtenerRecetaPorNombreConstante(const std::string& nombreBuscado) const {
+    int idx = encontrarIndiceRecetaPorNombre(nombreBuscado);
+    if (idx == -1) throw std::runtime_error("No encontrada: " + nombreBuscado);
+    return recetasAlmacenadas.obtenerEnPosicion(idx);
+}
+
+void ManejadorRecetas::eliminarRecetaPorNombre(const std::string& nombreAeliminar) {
+    int idx = encontrarIndiceRecetaPorNombre(nombreAeliminar);
+    if (idx == -1) throw std::runtime_error("No encontrada para eliminar: " + nombreAeliminar);
+    recetasAlmacenadas.eliminarEnPosicion(idx);
+}
+
+void ManejadorRecetas::eliminarTodasLasRecetas() {
+    recetasAlmacenadas.limpiarLista();
+}
+
+bool ManejadorRecetas::verificarSiRecetaExiste(const std::string& nombreReceta) const {
+    return encontrarIndiceRecetaPorNombre(nombreReceta) != -1;
+}
+
+// --- ORDENAMIENTO (QuickSort Recursivo) ---
+
+int ManejadorRecetas::particion(ListaDoblementeLigada<Receta>& lista, int izquierda, int derecha, int (*comparador)(const Receta&, const Receta&)) {
+    Receta pivote = lista.obtenerEnPosicion(derecha);
+    int i = (izquierda - 1);
+    for (int j = izquierda; j <= derecha - 1; j++) {
+        if (comparador(lista.obtenerEnPosicion(j), pivote) < 0) {
+            i++;
+            lista.intercambiarDatos(i, j);
+        }
+    }
+    lista.intercambiarDatos(i + 1, derecha);
+    return (i + 1);
+}
+
+void ManejadorRecetas::quickSortRecursivo(ListaDoblementeLigada<Receta>& lista, int izquierda, int derecha, int (*comparador)(const Receta&, const Receta&)) {
+    if (izquierda < derecha) {
+        int pi = particion(lista, izquierda, derecha, comparador);
+        quickSortRecursivo(lista, izquierda, pi - 1, comparador);
+        quickSortRecursivo(lista, pi + 1, derecha, comparador);
+    }
+}
+
+void ManejadorRecetas::ordenarRecetasPorNombre() {
+    if (recetasAlmacenadas.obtenerCantidadElementos() > 1)
+        quickSortRecursivo(recetasAlmacenadas, 0, recetasAlmacenadas.obtenerCantidadElementos() - 1, Receta::compararPorNombre);
+}
+void ManejadorRecetas::ordenarRecetasPorTiempoPreparacion() {
+    if (recetasAlmacenadas.obtenerCantidadElementos() > 1)
+        quickSortRecursivo(recetasAlmacenadas, 0, recetasAlmacenadas.obtenerCantidadElementos() - 1, Receta::compararPorTiempoPreparacion);
+}
+void ManejadorRecetas::ordenarRecetasPorCategoria() {
+    if (recetasAlmacenadas.obtenerCantidadElementos() > 1)
+        quickSortRecursivo(recetasAlmacenadas, 0, recetasAlmacenadas.obtenerCantidadElementos() - 1, Receta::compararPorCategoria);
+}
+void ManejadorRecetas::ordenarRecetasPorAutor() {
+    if (recetasAlmacenadas.obtenerCantidadElementos() > 1)
+        quickSortRecursivo(recetasAlmacenadas, 0, recetasAlmacenadas.obtenerCantidadElementos() - 1, Receta::compararPorAutor);
+}
+
+// --- BÚSQUEDA ---
+
+Receta* ManejadorRecetas::buscarRecetaBinariaPorNombre(const std::string& nombreBuscado) {
+    ordenarRecetasPorNombre();
+    int izquierda = 0;
+    int derecha = recetasAlmacenadas.obtenerCantidadElementos() - 1;
+    while (izquierda <= derecha) {
+        int medio = izquierda + (derecha - izquierda) / 2;
+        Receta& recetaMedio = recetasAlmacenadas.obtenerEnPosicion(medio);
+        std::string nombreMedio = recetaMedio.obtenerNombrePlatillo();
+        if (nombreMedio == nombreBuscado) return &recetaMedio;
+        if (nombreMedio < nombreBuscado) izquierda = medio + 1;
+        else derecha = medio - 1;
+    }
+    return nullptr;
+}
+
+
+// --- PERSISTENCIA (I/O) ---
+
+void ManejadorRecetas::guardarRecetasAarchivo(const std::string& rutaArchivo) {
+    std::ofstream archivoSalida(rutaArchivo);
+    if (!archivoSalida.is_open()) throw std::runtime_error("Error IO guardar: " + rutaArchivo);
+
+    int cant = recetasAlmacenadas.obtenerCantidadElementos();
+    archivoSalida << cant << std::endl;
+    for (int i = 0; i < cant; ++i) {
+        archivoSalida << recetasAlmacenadas.obtenerEnPosicion(i);
+    }
+    archivoSalida.close();
+}
+
+void ManejadorRecetas::cargarRecetasDesdeArchivo(const std::string& rutaArchivo) {
+    std::ifstream archivoEntrada(rutaArchivo);
+    if (!archivoEntrada.is_open()) {
+        std::cerr << "[I/O] No se encontró el archivo: " << rutaArchivo << std::endl;
+        return;
+    }
+    if (archivoEntrada.peek() == std::ifstream::traits_type::eof()) return;
+
+    int cantidad = 0;
+    archivoEntrada >> cantidad;
+    
+    if (archivoEntrada.fail() || cantidad < 0 || cantidad > 10000) {
+        std::cerr << "[ALERTA] Archivo corrupto (Cantidad invalida). Abortando carga." << std::endl;
+        archivoEntrada.clear(); 
+        return;
+    }
+
+    eliminarTodasLasRecetas();
+    archivoEntrada.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    for (int i = 0; i < cantidad; ++i) {
+        Receta r;
+        
+        // Blindaje de flujo CRÍTICO
+        if (archivoEntrada.eof() || archivoEntrada.bad()) { 
+            std::cerr << "[BLINDAJE] EOF o Bad stream detectado en Receta #" << i + 1 << ". Deteniendo carga." << std::endl;
+            break; 
+        }
+        
+        archivoEntrada >> r;
+        
+        // Chequeo de integridad después de la lectura
+        if (archivoEntrada.fail() || r.obtenerNombrePlatillo().empty() || r.obtenerNombrePlatillo() == "Sin nombre") {
+             std::cerr << "[ERROR I/O] Datos corruptos/faltantes en Receta #" << i + 1 << ". Deteniendo lectura." << std::endl;
+             archivoEntrada.clear();
+             break;
+        }
+        
+        recetasAlmacenadas.agregarAlFinal(r);
+    }
+    archivoEntrada.close();
+}
+
+std::string ManejadorRecetas::obtenerEstadisticasRecetario() const {
+    return "Total Recetas: " + std::to_string(obtenerCantidadRecetas());
+}
+
+
+
+// 🔹 NUEVO MÉTODO: Validación rápida de archivos
+bool ManejadorRecetas::archivoEsValido(const std::string& rutaArchivo) {
+    std::ifstream archivo(rutaArchivo);
+    if (!archivo.is_open()) return false;
+    
+    int cantidad = 0;
+    archivo >> cantidad;
+    
+    if (archivo.fail() || cantidad < 0 || cantidad > 10000) {
+        return false;
+    }
+    
+    return true;
+}

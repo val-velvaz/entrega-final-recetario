@@ -1,34 +1,72 @@
-#pragma once
+﻿#pragma once
 #include "ui/GameState.hpp"
-#include "Game.hpp"
+#include "ui/Boton.hpp"
+#include "ui/CajaDeTexto.hpp"
+#include "ui/PantallaGestionArchivos.hpp" // NUEVO
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <vector>
+#include <string>
+
+struct ItemLista {
+    SDL_Texture* textura;
+    SDL_Texture* texMiniatura;
+    SDL_FRect rect;
+    int indiceOriginal;
+    SDL_FRect rectOjo;
+    SDL_FRect rectEditar; // NUEVO
+    SDL_FRect rectBasura;
+};
 
 class PantallaVisualizarRecetas : public GameState {
 private:
     TTF_Font* fuenteTitulo;
-    TTF_Font* fuenteListado;
-    SDL_Texture* texTitulo;
+    TTF_Font* fuenteLista;
+    TTF_Font* fuenteUI; 
+    
+    SDL_Texture* texturaTitulo;
     SDL_FRect rectTitulo;
+    
+    CajaDeTexto* inputBusqueda;
+    Boton* btnBuscar;
+    Boton* btnReset;
 
-    SDL_Texture* texBotonVolver;
-    SDL_FRect rectBotonVolver;
+    Boton* btnOrdNombre;
+    Boton* btnOrdTiempo;
+    Boton* btnOrdCategoria;
+    Boton* btnOrdAutor;
+    
+    Boton* btnCargar;
+    Boton* btnGuardar;
+    Boton* btnEliminarTodo;
+    
+    // Boton* btnIrAEliminar; // ELIMINADO, ahora es por fila
 
-    struct ItemLista {
-        SDL_Texture* textura;
-        SDL_FRect rect;
-    };
-    std::vector<ItemLista> itemsRenderizados;
+    SDL_Texture* texIconoOjo;
+    SDL_Texture* texIconoBasura;
+    SDL_Texture* texIconoEditar; // NUEVO
+
+    SDL_Texture* texLblNombre; SDL_FRect rLblNombre;
+    SDL_Texture* texLblTiempo; SDL_FRect rLblTiempo;
+    SDL_Texture* texLblCat;    SDL_FRect rLblCat;
+    SDL_Texture* texLblAut;    SDL_FRect rLblAut;
+    SDL_Texture* texLblCargar; SDL_FRect rLblCargar;
+    SDL_Texture* texLblGuardar; SDL_FRect rLblGuardar;
+    SDL_Texture* texLblDelAll; SDL_FRect rLblDelAll;
+
+    Boton* btnVolver;
+    std::vector<ItemLista> itemsLista;
+    std::string filtroNombre; 
 
     void generarCacheListado(Game& game);
-    bool puntoEnRectangulo(float x, float y, const SDL_FRect& rect);
 
 public:
     PantallaVisualizarRecetas();
-    virtual ~PantallaVisualizarRecetas();
+    ~PantallaVisualizarRecetas();
 
-    virtual void init(Game& game) override;
-    virtual void cleanup() override;
-    virtual void handleEvents(Game& game) override;
-    virtual void update(Game& game) override;
-    virtual void render(Game& game) override;
+    void init(Game& game) override;
+    void cleanup() override;
+    void handleEvents(Game& game) override;
+    void update(Game& game) override;
+    void render(Game& game) override;
 };

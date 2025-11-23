@@ -1,4 +1,4 @@
-#include "entities/Ingrediente.hpp"
+﻿#include "entities/Ingrediente.hpp"
 
 Ingrediente::Ingrediente() : 
     nombreIngrediente(""), 
@@ -60,13 +60,19 @@ std::string Ingrediente::obtenerRepresentacionFormateada() const {
 }
 
 std::ostream& operator<<(std::ostream& salida, const Ingrediente& ing) {
-    salida << ing.nombreIngrediente << "\n" << ing.cantidadIngrediente << "\n" << ing.unidadMedida;
+    salida << ing.nombreIngrediente << "\n" << ing.cantidadIngrediente << "\n" << ing.unidadMedida << "\n";
     return salida;
 }
 
+// CORRECCIÓN: Usar entrada sin std::ws y getline consecutivas
 std::istream& operator>>(std::istream& entrada, Ingrediente& ing) {
-    std::getline(entrada >> std::ws, ing.nombreIngrediente);
+    // Usamos std::ws para consumir espacios en blanco iniciales antes del primer getline
+    std::getline(entrada >> std::ws, ing.nombreIngrediente); 
     std::getline(entrada, ing.cantidadIngrediente);
     std::getline(entrada, ing.unidadMedida);
+    
+    // Si falla la lectura de cualquiera de las lineas, el flag fail se activa
+    // Si la lectura de cantidad es un newline vacio, esto evita el crash
+    
     return entrada;
 }

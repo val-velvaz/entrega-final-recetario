@@ -1,9 +1,13 @@
-#include <SDL3/SDL.h>       
-#include <SDL3/SDL_main.h>  
+#include <SDL3/SDL.h>
 #include "Game.hpp"
 #include <iostream>
 
+// 🔥 CORRECCIÓN: main estándar para SDL3
 int main(int argc, char* argv[]) {
+    // Silenciar parámetros no usados
+    (void)argc;
+    (void)argv;
+    
     try {
         Game recetarioGame;
         if (recetarioGame.estaCorriendoApp()) {

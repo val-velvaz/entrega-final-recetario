@@ -1,0 +1,243 @@
+﻿#include "ui/PantallaGestionArchivos.hpp"
+#include "ui/PantallaVisualizarRecetas.hpp"
+#include "Game.hpp"
+#include "persistence/RutasAssets.hpp"
+#include "utils/RenderizadorTextos.hpp"
+#include "DatosPruebaRecetario.hpp"
+#include <iostream>
+#include <filesystem>
+#include <limits>
+
+namespace fs = std::filesystem;
+
+PantallaGestionArchivos::PantallaGestionArchivos(bool esModoGuardar)
+    : fuenteTitulo(nullptr), fuenteLista(nullptr), texTitulo(nullptr),
+      modoGuardar(esModoGuardar), btnNuevoArchivo(nullptr), 
+      inputNuevoArchivo(nullptr), btnCargarTest(nullptr), btnVolver(nullptr) {}
+
+PantallaGestionArchivos::~PantallaGestionArchivos() {
+    cleanup();
+}
+
+void PantallaGestionArchivos::init(Game& game) {
+    SDL_Renderer* renderer = game.getRenderer();
+    SDL_Window* window = game.getWindow();
+    int w, h;
+    SDL_GetRenderOutputSize(renderer, &w, &h);
+
+    fuenteTitulo = TTF_OpenFont(RutasAssets::obtenerRutaFuenteNegrita().c_str(), 36);
+    fuenteLista = TTF_OpenFont(RutasAssets::obtenerRutaFuenteRegular().c_str(), 20);
+
+    std::string titulo = modoGuardar ? "GUARDAR ARCHIVO" : "CARGAR ARCHIVO";
+    texTitulo = RenderizadorTextos::renderizarTexto(renderer, fuenteTitulo, titulo, {50, 50, 70, 255});
+    if (texTitulo) {
+        rectTitulo = { (w - (float)texTitulo->w)/2.0f, 30.0f, (float)texTitulo->w, (float)texTitulo->h };
+    }
+
+    escanearDirectorio(renderer);
+
+    float yBottom = h - 100.0f;
+    
+    if (modoGuardar) {
+        inputNuevoArchivo = new CajaDeTexto(window, w/2 - 200, yBottom, 300, 40, fuenteLista);
+        inputNuevoArchivo->establecerPlaceholder("Nombre nuevo archivo...");
+        btnNuevoArchivo = new Boton(renderer, "assets/images/icons/archivo_nuevo.png", w/2 + 120, yBottom, 40, 40);
+    } else {
+        btnCargarTest = new Boton(renderer, "assets/images/icons/archivo_test.png", w/2 - 25, yBottom, 50, 50); 
+    }
+
+    btnVolver = new Boton(renderer, RutasAssets::obtenerRutaIconoBotonVolver(), 50, yBottom, 50, 50);
+}
+
+void PantallaGestionArchivos::escanearDirectorio(SDL_Renderer* renderer) {
+    for(auto& b : listaBotonesArchivos) {
+        if (b.btn) delete b.btn;
+        if (b.label) SDL_DestroyTexture(b.label);
+    }
+    listaBotonesArchivos.clear();
+
+    std::string pathSaves = "assets/saves";
+    if (!fs::exists(pathSaves)) fs::create_directories(pathSaves);
+
+    float yPos = 100.0f;
+    int w, h;
+    SDL_GetRenderOutputSize(renderer, &w, &h);
+
+    int fileCount = 0;
+    for (const auto& entry : fs::directory_iterator(pathSaves)) {
+        if (entry.path().extension() == ".dat") {
+            if (fileCount >= 3) continue; // Límite de 3 archivos
+
+            std::string filename = entry.path().filename().string();
+            
+            BotonArchivo item;
+            item.btn = new Boton(renderer, "assets/images/icons/boton_guardar.png", w/2 - 200, yPos, 40, 40);
+            item.nombreArchivo = filename;
+            
+            item.label = RenderizadorTextos::renderizarTexto(renderer, fuenteLista, filename, {0,0,0,255});
+            if (item.label) {
+                item.rectLabel = { (float)w/2 - 140, yPos + 10, (float)item.label->w, (float)item.label->h };
+            }
+
+            listaBotonesArchivos.push_back(item);
+            yPos += 60.0f;
+            fileCount++;
+        }
+    }
+}
+
+void PantallaGestionArchivos::cleanup() {
+    if (texTitulo) { SDL_DestroyTexture(texTitulo); texTitulo = nullptr; }
+    if (fuenteTitulo) { TTF_CloseFont(fuenteTitulo); fuenteTitulo = nullptr; }
+    if (fuenteLista) { TTF_CloseFont(fuenteLista); fuenteLista = nullptr; }
+
+    for(auto& b : listaBotonesArchivos) {
+        if (b.btn) { delete b.btn; b.btn = nullptr; }
+        if (b.label) { SDL_DestroyTexture(b.label); b.label = nullptr; }
+    }
+    listaBotonesArchivos.clear();
+
+    if (btnNuevoArchivo) { delete btnNuevoArchivo; btnNuevoArchivo = nullptr; }
+    if (inputNuevoArchivo) { delete inputNuevoArchivo; inputNuevoArchivo = nullptr; }
+    if (btnCargarTest) { delete btnCargarTest; btnCargarTest = nullptr; }
+    if (btnVolver) { delete btnVolver; btnVolver = nullptr; }
+}
+
+void PantallaGestionArchivos::handleEvents(Game& game) {
+    SDL_Event evento;
+    while (SDL_PollEvent(&evento)) {
+        if (evento.type == SDL_EVENT_QUIT) game.setEstaCorriendo(false);
+
+        if (inputNuevoArchivo) inputNuevoArchivo->manejarEvento(evento);
+
+        if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN && evento.button.button == SDL_BUTTON_LEFT) {
+            float mx = evento.button.x;
+            float my = evento.button.y;
+
+            if (btnVolver && btnVolver->estaPresionado(mx, my)) {
+                game.popEstado();
+                std::cout << "[FLAG] Gestion Archivos: Volver" << std::endl;
+                return;
+            }
+
+            for (const auto& item : listaBotonesArchivos) {
+                if (item.btn->estaPresionado(mx, my)) {
+                    seleccionarArchivo(game, "assets/saves/" + item.nombreArchivo);
+                    return; 
+                }
+            }
+
+            if (modoGuardar && btnNuevoArchivo && btnNuevoArchivo->estaPresionado(mx, my)) {
+                crearYSeleccionar(game);
+                std::cout << "[FLAG] Gestion Archivos: Crear Nuevo" << std::endl;
+            }
+
+            if (!modoGuardar && btnCargarTest && btnCargarTest->estaPresionado(mx, my)) {
+                cargarDatosPrueba(game);
+                std::cout << "[FLAG] Gestion Archivos: Cargar 1000 Pruebas" << std::endl;
+            }
+        }
+    }
+}
+
+void PantallaGestionArchivos::seleccionarArchivo(Game& game, const std::string& ruta) {
+    std::cout << "[FLAG] Gestion Archivos: INICIANDO I/O. (Ventana se congelará) Ruta: " << ruta << std::endl;
+    
+    try {
+        if (modoGuardar) {
+            game.getManejadorRecetas().guardarRecetasAarchivo(ruta);
+            std::cout << "[FLAG] Gestion Archivos: Guardado Exitoso." << std::endl;
+        } else {
+            game.getManejadorRecetas().cargarRecetasDesdeArchivo(ruta);
+            std::cout << "[FLAG] Gestion Archivos: Carga Finalizada." << std::endl;
+        }
+        
+        game.popEstado();
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR CRITICO IO] Operacion I/O falló: " << e.what() << std::endl;
+    }
+}
+
+void PantallaGestionArchivos::crearYSeleccionar(Game& game) {
+    std::string nombre = inputNuevoArchivo->obtenerTexto();
+    if (nombre.empty()) return;
+    
+    if (nombre.find(".dat") == std::string::npos) nombre += ".dat";
+    seleccionarArchivo(game, "assets/saves/" + nombre);
+}
+
+void PantallaGestionArchivos::cargarDatosPrueba(Game& game) {
+    std::cout << "[FLAG] Gestion Archivos: Generando 1000 recetas en memoria..." << std::endl;
+    ListaDoblementeLigada<Receta> datosTest = DatosPruebaRecetario::obtenerRecetasDeEjemplo();
+    
+    for (int i = 0; i < datosTest.obtenerCantidadElementos(); ++i) {
+        Receta r = datosTest.obtenerEnPosicion(i); 
+        try {
+            game.getManejadorRecetas().agregarRecetaNueva(r);
+        } catch (...) {} 
+    }
+    std::cout << "[FLAG] Gestion Archivos: Datos de prueba inyectados. Saliendo." << std::endl;
+    game.popEstado();
+}
+
+void PantallaGestionArchivos::update(Game& game) { 
+    (void)game;
+    for(auto& b : listaBotonesArchivos) b.btn->actualizar();
+    if(btnNuevoArchivo) btnNuevoArchivo->actualizar();
+    if(btnCargarTest) btnCargarTest->actualizar();
+    if(btnVolver) btnVolver->actualizar();
+}
+
+void PantallaGestionArchivos::render(Game& game) {
+    SDL_Renderer* r = game.getRenderer();
+    int w, h;
+    SDL_GetRenderOutputSize(r, &w, &h);
+    
+    SDL_SetRenderDrawColor(r, 230, 235, 240, 255);
+    SDL_RenderClear(r);
+
+    if (texTitulo) SDL_RenderTexture(r, texTitulo, nullptr, &rectTitulo);
+
+    for (const auto& item : listaBotonesArchivos) {
+        SDL_SetRenderDrawColor(r, 255, 255, 255, 200);
+        SDL_FRect row = { 100.0f, item.rectLabel.y - 5, 824.0f, 40.0f };
+        SDL_RenderFillRect(r, &row);
+
+        item.btn->render(r);
+        SDL_RenderTexture(r, item.label, nullptr, &item.rectLabel);
+    }
+
+    float yBottom = (float)h - 100.0f;
+
+    if (modoGuardar) {
+        if (inputNuevoArchivo) inputNuevoArchivo->render(r);
+        if (btnNuevoArchivo) btnNuevoArchivo->render(r);
+        
+        SDL_Surface* sLbl = TTF_RenderText_Blended(fuenteLista, "Crear nuevo archivo:", 0, {100, 100, 100, 255});
+        if (sLbl) {
+            SDL_Texture* tLbl = SDL_CreateTextureFromSurface(r, sLbl);
+            SDL_FRect rLbl = { 200.0f, h - 145.0f, (float)sLbl->w, (float)sLbl->h };
+            SDL_RenderTexture(r, tLbl, nullptr, &rLbl);
+            SDL_DestroyTexture(tLbl);
+            SDL_DestroySurface(sLbl);
+        }
+
+    } else {
+        if (btnCargarTest) {
+            btnCargarTest->render(r);
+            
+            SDL_Surface* sLbl = TTF_RenderText_Blended(fuenteLista, "Cargar datos de prueba", 0, {0, 100, 0, 255});
+            if (sLbl) {
+                SDL_Texture* tLbl = SDL_CreateTextureFromSurface(r, sLbl);
+                SDL_FRect rLbl = { (w/2.0f) + 30.0f, h - 90.0f, (float)sLbl->w, (float)sLbl->h };
+                SDL_RenderTexture(r, tLbl, nullptr, &rLbl);
+                SDL_DestroyTexture(tLbl);
+                SDL_DestroySurface(sLbl);
+            }
+        }
+    }
+
+    if (btnVolver) btnVolver->render(r);
+    
+    SDL_RenderPresent(r);
+}

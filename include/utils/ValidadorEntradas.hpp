@@ -20,11 +20,17 @@ public:
     static bool verificarSiEsNumeroEnteroPositivo(const std::string& entrada);
     static bool verificarSiEsNumeroDecimalPositivo(const std::string& entrada);
     static bool verificarSiEstaEnRango(int valor, int minimo, int maximo);
-    static bool verificarLongitudString(
-        const std::string& entrada,
-        int longitudMinima,
-        int longitudMaxima
+    static bool verificarLongitudString( const std::string& entrada, size_t longitudMinima, size_t longitudMaxima
     );
+    /*
+    bool ValidadorEntradas::verificarLongitudString(
+    const std::string& entrada,
+    size_t longitudMinima,  // Cambiar int por size_t
+    size_t longitudMaxima   // Cambiar int por size_t
+) {
+    return entrada.length() >= longitudMinima && entrada.length() <= longitudMaxima;
+}
+    */
 
     static bool verificarSiEsEmailValido(const std::string& email);
     static bool verificarSiEsRutaArchivoValida(const std::string& ruta);

@@ -1,80 +1,117 @@
-#include "ui/CajaDeTexto.hpp"
+﻿#include "ui/CajaDeTexto.hpp"
+#include "utils/RenderizadorTextos.hpp"
 
-CajaDeTexto::CajaDeTexto(float x, float y, float w, float h, TTF_Font* f)
-    : rect{x, y, w, h}, texto(""), tieneFoco(false), fuente(f), texturaTexto(nullptr) {}
+CajaDeTexto::CajaDeTexto(SDL_Window* win, float x, float y, float w, float h, TTF_Font* f)
+    : ventana(win), rect{x, y, w, h}, texto(""), placeholder(""), tieneFoco(false), fuente(f), texturaTexto(nullptr) {}
 
 CajaDeTexto::~CajaDeTexto() {
-    if (texturaTexto) SDL_DestroyTexture(texturaTexto);
+    if (texturaTexto) {
+        SDL_DestroyTexture(texturaTexto);
+    }
 }
 
-void CajaDeTexto::regenerarTextura(SDL_Renderer* renderer) {
+void CajaDeTexto::establecerTexto(const std::string& t) {
+    texto = t;
     if (texturaTexto) {
         SDL_DestroyTexture(texturaTexto);
         texturaTexto = nullptr;
     }
-    
-    if (texto.empty()) return;
-
-    // SDL3: Recordar el argumento '0' para longitud automática
-    SDL_Surface* sup = TTF_RenderText_Blended(fuente, texto.c_str(), 0, colorTexto);
-    if (sup) {
-        texturaTexto = SDL_CreateTextureFromSurface(renderer, sup);
-        SDL_DestroySurface(sup);
-    }
 }
 
-void CajaDeTexto::manejarEventos(const SDL_Event& evento) {
-    // 1. Detectar clic para dar foco
+void CajaDeTexto::manejarEvento(const SDL_Event& evento) {
     if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
         float mx = evento.button.x;
         float my = evento.button.y;
-        bool clicDentro = (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h);
+        bool clicDentro = (mx >= rect.x && mx <= rect.x + rect.w &&
+                           my >= rect.y && my <= rect.y + rect.h);
         
         if (clicDentro && !tieneFoco) {
             tieneFoco = true;
-            SDL_StartTextInput(NULL); // Iniciar captura de texto SDL3
+            SDL_StartTextInput(ventana); 
         } else if (!clicDentro && tieneFoco) {
             tieneFoco = false;
-            SDL_StopTextInput(NULL);
+            SDL_StopTextInput(ventana);
         }
     }
-    
-    // 2. Capturar texto escrito (SDL3)
-    if (tieneFoco) {
-        if (evento.type == SDL_EVENT_TEXT_INPUT) {
-            texto += evento.text.text;
-            // Necesitamos el renderer para regenerar, pero handleEvents no lo tiene.
-            // Truco: Marcar flag "sucio" o pasar renderer a handleEvents. 
-            // Por simplicidad académica, asumimos que se regenerará en render().
-        }
-        else if (evento.type == SDL_EVENT_KEY_DOWN) {
-            if (evento.key.key == SDLK_BACKSPACE && !texto.empty()) {
-                // Borrar último caracter (cuidado con UTF-8, esto es simple para ASCII)
-                texto.pop_back(); 
-            }
+    else if (tieneFoco && evento.type == SDL_EVENT_TEXT_INPUT) {
+        texto += evento.text.text;
+        if (texturaTexto) { SDL_DestroyTexture(texturaTexto); texturaTexto = nullptr; }
+    }
+    else if (tieneFoco && evento.type == SDL_EVENT_KEY_DOWN) {
+        if (evento.key.key == SDLK_BACKSPACE && !texto.empty()) {
+            texto.pop_back();
+            if (texturaTexto) { SDL_DestroyTexture(texturaTexto); texturaTexto = nullptr; }
         }
     }
 }
 
-void CajaDeTexto::renderizar(SDL_Renderer* renderer) {
-    // Regenerar textura si es necesario (aquí un poco ineficiente, mejor optimizar con flag)
-    regenerarTextura(renderer);
+void CajaDeTexto::regenerarTextura(SDL_Renderer* renderer) {
+    if (texturaTexto) SDL_DestroyTexture(texturaTexto);
+    texturaTexto = nullptr;
 
-    // Dibujar fondo
-    SDL_SetRenderDrawColor(renderer, colorFondo.r, colorFondo.g, colorFondo.b, colorFondo.a);
+    if (texto.empty() && placeholder.empty()) return;
+
+    std::string textoAmostrar = texto.empty() ? placeholder : texto;
+    // Color gris suave para placeholder, negro solido para texto real
+    SDL_Color color = texto.empty() ? SDL_Color{150, 150, 150, 255} : SDL_Color{50, 50, 50, 255};
+
+    texturaTexto = RenderizadorTextos::renderizarTexto(renderer, fuente, textoAmostrar, color);
+}
+
+// --- AQUÍ ESTÁ EL NUEVO DISEÑO ---
+void CajaDeTexto::render(SDL_Renderer* renderer) {
+    // Habilitar blending para transparencias (sombras)
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    // 1. SOMBRA (Depth Effect)
+    // Dibujamos un rectangulo gris semitransparente desplazado ligeramente
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 30); // Negro al 12% opacidad
+    SDL_FRect rSombra = {rect.x + 4, rect.y + 4, rect.w, rect.h};
+    SDL_RenderFillRect(renderer, &rSombra);
+
+    // 2. FONDO (Blanco Puro)
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderFillRect(renderer, &rect);
 
-    // Dibujar borde (Verde si tiene foco, Negro si no)
-    if (tieneFoco) SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255);
-    else SDL_SetRenderDrawColor(renderer, colorBorde.r, colorBorde.g, colorBorde.b, colorBorde.a);
-    SDL_RenderRect(renderer, &rect);
+    // 3. INDICADOR DE ESTADO (Borde Inferior)
+    if (tieneFoco) {
+        // ACTIVO: Barra inferior gruesa de color "Azul Cornflower" (Pastel intenso)
+        SDL_SetRenderDrawColor(renderer, 100, 149, 237, 255); 
+        SDL_FRect rLinea = {rect.x, rect.y + rect.h - 3, rect.w, 3}; // 3px de alto
+        SDL_RenderFillRect(renderer, &rLinea);
+    } else {
+        // INACTIVO: Borde sutil gris alrededor (Estilo tarjeta)
+        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        SDL_RenderRect(renderer, &rect);
+    }
+    
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
-    // Dibujar texto
+    // 4. TEXTO
+    if (!texturaTexto) {
+        regenerarTextura(renderer);
+    }
+
     if (texturaTexto) {
-        float w, h;
-        SDL_GetTextureSize(texturaTexto, &w, &h);
-        // Centrar verticalmente
-        SDL_FRect dst = { rect.x + 5, rect.y + (rect.h - h)/2, w, h };
+        float tw = (float)texturaTexto->w;
+        float th = (float)texturaTexto->h;
+        
+        // Padding (margen interno) para que el texto no pegue al borde
+        float paddingX = 10.0f;
+        // Centrado vertical
+        float posY = rect.y + (rect.h - th) / 2.0f;
+        
+        // Si es multilínea o muy alto (como el campo de procedimiento), alinear arriba
+        if (rect.h > 50) { 
+            posY = rect.y + 10.0f; 
+        }
+
+        // Clipping: Evitar que el texto se salga de la caja si es muy largo
+        SDL_SetRenderClipRect(renderer, (const SDL_Rect*)&rect);
+        
+        SDL_FRect dst = { rect.x + paddingX, posY, tw, th };
         SDL_RenderTexture(renderer, texturaTexto, nullptr, &dst);
+        
+        SDL_SetRenderClipRect(renderer, nullptr); // Desactivar clip
     }
 }

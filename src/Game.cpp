@@ -1,18 +1,21 @@
-#include "Game.hpp"
+﻿#include "Game.hpp"
 #include "ui/PantallaMenuPrincipal.hpp"
 #include <iostream>
 #include <stdexcept>
+// #include <SDL3_image/SDL_image.h> // No es necesario explícitamente aquí si no usamos IMG_Init
 
 Game::Game() : ventana(nullptr), renderer(nullptr), estaCorriendo(false) {
     try {
         inicializarSDL();
-        cargarDatos();
+        
+        // Inicio vacío (sin cargar datos automáticos)
+        // cargarDatos(); 
         
         this->estaCorriendo = true;
         
+        std::cout << "[DEBUG] Creando estado Menu Principal..." << std::endl;
         pushEstado(new PantallaMenuPrincipal()); 
-        
-        std::cout << "Sistema inicializado correctamente." << std::endl;
+        std::cout << "[SISTEMA] Inicializacion completa." << std::endl;
         
     } catch (const std::exception& e) {
         std::cerr << "Error fatal durante la inicializacion: " << e.what() << std::endl;
@@ -41,27 +44,29 @@ void Game::inicializarSDL() {
     if (!TTF_Init()) {
         throw std::runtime_error("Error al inicializar TTF: " + std::string(SDL_GetError()));
     }
+    
+    // NOTA: En SDL3_image, IMG_Init ya no es necesario/no existe.
+    // La librería se auto-inicializa al usar IMG_Load.
+    
+    std::cout << "[SISTEMA] Subsistemas SDL iniciados." << std::endl;
 }
 
 void Game::cargarDatos() {
     try {
         manejadorRecetas.cargarRecetasDesdeArchivo(RUTA_ARCHIVO_RECETAS);
-        std::cout << "Recetas cargadas: " << manejadorRecetas.obtenerCantidadRecetas() << std::endl;
     } catch (...) {
-        std::cout << "Iniciando recetario vacio (Archivo no encontrado o nuevo)." << std::endl;
+        std::cout << "[DATOS] Error o archivo no encontrado." << std::endl;
     }
 }
 
 void Game::limpiar() {
     try {
-        std::cout << "Guardando recetas..." << std::endl;
+        // Guardado manual recomendado, pero dejamos el automático por seguridad
         manejadorRecetas.guardarRecetasAarchivo(RUTA_ARCHIVO_RECETAS);
-        std::cout << "Recetas guardadas exitosamente." << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error al guardar recetas: " << e.what() << std::endl;
     }
 
-    // Limpiar estados de la FSM
     while (!estadosJuego.estaVacia()) {
         try {
             GameState* estadoActual = estadosJuego.consultarTope();
@@ -69,36 +74,20 @@ void Game::limpiar() {
                 estadoActual->cleanup();
                 delete estadoActual;
             }
-        } catch (const std::exception& e) {
-            std::cerr << "Error critico durante cleanup del estado: " 
-                      << e.what() << std::endl;
-        } catch (...) {
-            std::cerr << "Error critico desconocido durante cleanup del estado." << std::endl;
-        }
-        
-        try {
             estadosJuego.desapilar();
-        } catch (const std::exception& e) {
-             std::cerr << "Error critico al desapilar estado: " 
-                       << e.what() << std::endl;
+        } catch (...) {
              break; 
         }
     }
 
-    // Destruir recursos de SDL
-    if (renderer) {
-        SDL_DestroyRenderer(renderer);
-        renderer = nullptr;
-    }
-    if (ventana) {
-        SDL_DestroyWindow(ventana);
-        ventana = nullptr;
-    }
+    if (renderer) { SDL_DestroyRenderer(renderer); renderer = nullptr; }
+    if (ventana) { SDL_DestroyWindow(ventana); ventana = nullptr; }
     
     TTF_Quit();
+    // IMG_Quit(); // Eliminado por ser obsoleto
     SDL_Quit();
     
-    std::cout << "SDL limpiado correctamente. Adios." << std::endl;
+    std::cout << "[SISTEMA] Recursos liberados. Adios." << std::endl;
 }
 
 void Game::procesarEventos() {
@@ -114,7 +103,7 @@ void Game::actualizar() {
 }
 
 void Game::dibujar() {
-    SDL_SetRenderDrawColor(renderer, 255, 230, 230, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
     if (!estadosJuego.estaVacia()) {
@@ -125,78 +114,42 @@ void Game::dibujar() {
 }
 
 void Game::pushEstado(GameState* estado) {
-    if (!estado) {
-        std::cerr << "[ERROR] Intento de apilar estado nulo!" << std::endl;
-        return;
-    }
+    if (!estado) return;
     estadosJuego.apilar(estado);
     estadosJuego.consultarTope()->init(*this);
 }
 
-// ❌ MÉTODO CON BUG - CORREGIDO ✅
 void Game::popEstado() {
     if (!estadosJuego.estaVacia()) {
-        // 1. Guardamos el puntero ANTES de desapilar
         GameState* estadoAeliminar = estadosJuego.consultarTope();
-        
-        // 2. Limpiamos recursos del estado
-        if (estadoAeliminar) {
-            estadoAeliminar->cleanup();
-        }
-        
-        // 3. Desapilamos (esto solo quita el puntero de la pila)
+        if (estadoAeliminar) estadoAeliminar->cleanup();
         estadosJuego.desapilar();
-        
-        // 4. AHORA sí liberamos la memoria
         delete estadoAeliminar;
-        estadoAeliminar = nullptr; // Buena práctica
-        
-        std::cout << "[DEBUG] Estado eliminado correctamente" << std::endl;
     }
 }
 
-// ❌ MÉTODO CON BUG CRÍTICO - CORREGIDO ✅
 void Game::cambiarEstado(GameState* estadoNuevo) {
-    if (!estadoNuevo) {
-        std::cerr << "[ERROR] Intento de cambiar a estado nulo!" << std::endl;
-        return;
-    }
+    if (!estadoNuevo) return;
     
-    std::cout << "[DEBUG] Cambiando estado..." << std::endl;
-    
-    // 1. Guardamos el puntero del estado actual ANTES de hacer nada
     GameState* estadoAnterior = nullptr;
     if (!estadosJuego.estaVacia()) {
         estadoAnterior = estadosJuego.consultarTope();
-    }
-    
-    // 2. Limpiamos el estado anterior
-    if (estadoAnterior) {
-        estadoAnterior->cleanup();
-    }
-    
-    // 3. Desapilamos (solo removemos el puntero de la pila)
-    if (!estadosJuego.estaVacia()) {
         estadosJuego.desapilar();
     }
     
-    // 4. Liberamos memoria del estado anterior
     if (estadoAnterior) {
+        estadoAnterior->cleanup();
         delete estadoAnterior;
-        estadoAnterior = nullptr;
     }
     
-    // 5. Apilamos e inicializamos el nuevo estado
     estadosJuego.apilar(estadoNuevo);
     estadosJuego.consultarTope()->init(*this);
-    
-    std::cout << "[DEBUG] Estado cambiado exitosamente" << std::endl;
 }
 
 void Game::run() {
+    std::cout << "[RUN] Iniciando bucle principal..." << std::endl;
     while (estaCorriendo) {
         if (estadosJuego.estaVacia()) {
-            std::cout << "Diagnostico: Pila de estados vacia detectada. Terminando aplicacion..." << std::endl;
             estaCorriendo = false;
             continue;
         }
@@ -204,5 +157,8 @@ void Game::run() {
         procesarEventos();
         actualizar();
         dibujar();
+        
+        SDL_Delay(16);
     }
+    std::cout << "[RUN] Bucle finalizado." << std::endl;
 }

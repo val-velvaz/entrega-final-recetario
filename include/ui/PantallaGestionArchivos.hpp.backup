@@ -1,0 +1,56 @@
+﻿#pragma once
+#include "ui/GameState.hpp"
+#include "ui/Boton.hpp"
+#include "ui/CajaDeTexto.hpp"
+#include <vector>
+#include <string>
+#include <filesystem>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
+
+class PantallaGestionArchivos : public GameState {
+private:
+    TTF_Font* fuenteTitulo;
+    TTF_Font* fuenteLista;
+    TTF_Font* fuenteSettings; 
+    SDL_Texture* texTitulo;
+    SDL_FRect rectTitulo;
+
+    bool modoGuardar;
+
+    // Lista de archivos encontrados
+    struct BotonArchivo {
+        Boton* btn;
+        SDL_Texture* label;
+        SDL_FRect rectLabel;
+        std::string nombreArchivo;
+    };
+    std::vector<BotonArchivo> listaBotonesArchivos;
+
+    // Controles Avanzados
+    Boton* btnNuevoArchivo; 
+    CajaDeTexto* inputNuevoArchivo;
+    Boton* btnCargarTest;
+    Boton* btnVolver;
+    
+    // Configuración Avanzada de Archivo
+    Boton* btnSeparador; // Botón para cambiar separador
+    SDL_Texture* texSeparador;
+    std::string separadorActual;
+
+    void escanearDirectorio(SDL_Renderer* renderer);
+    void seleccionarArchivo(Game& game, const std::string& nombre);
+    void crearYSeleccionar(Game& game);
+    void cargarDatosPrueba(Game& game);
+    void actualizarSeparador(SDL_Renderer* renderer);
+
+public:
+    PantallaGestionArchivos(bool esModoGuardar);
+    ~PantallaGestionArchivos();
+
+    void init(Game& game) override;
+    void cleanup() override;
+    void handleEvents(Game& game) override;
+    void update(Game& game) override;
+    void render(Game& game) override;
+};
