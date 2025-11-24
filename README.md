@@ -181,6 +181,7 @@ Recetario/
 
 # 👨‍💻 Autoría
 
-* *Autor:* [Tu Nombre / Equipo]
+* *Autor:* Valeria Velázquez Vázquez
 * *Curso:* Estructuras de Datos
 * *Versión:* 2.0.0 (Stable Release)
+
