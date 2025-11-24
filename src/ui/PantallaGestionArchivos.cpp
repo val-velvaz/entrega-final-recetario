@@ -12,10 +12,11 @@
 namespace fs = std::filesystem;
 
 PantallaGestionArchivos::PantallaGestionArchivos(bool esModoGuardar)
-    : fuenteTitulo(nullptr), fuenteLista(nullptr), fuenteCargando(nullptr), texTitulo(nullptr),
-      modoGuardar(esModoGuardar), btnNuevoArchivo(nullptr), 
-      inputNuevoArchivo(nullptr), btnCargarTest(nullptr), btnVolver(nullptr),
-      cargandoDatos(false), texCargando(nullptr) {}
+    : fuenteTitulo(nullptr), fuenteLista(nullptr), fuenteSettings(nullptr), fuenteCargando(nullptr), 
+      texTitulo(nullptr), rectTitulo({0,0,0,0}), modoGuardar(esModoGuardar), 
+      btnNuevoArchivo(nullptr), inputNuevoArchivo(nullptr), btnCargarTest(nullptr), btnVolver(nullptr),
+      btnSeparador(nullptr), texSeparador(nullptr), separadorActual(""),
+      cargandoDatos(false), texCargando(nullptr), rectCargando({0,0,0,0}), tiempoInicio(0) {}
 
 PantallaGestionArchivos::~PantallaGestionArchivos() {
     cleanup();
@@ -26,6 +27,8 @@ void PantallaGestionArchivos::init(Game& game) {
     SDL_Window* window = game.getWindow();
     int w, h;
     SDL_GetRenderOutputSize(renderer, &w, &h);
+
+    tiempoInicio = SDL_GetTicks();
 
     fuenteTitulo = TTF_OpenFont(RutasAssets::obtenerRutaFuenteNegrita().c_str(), 36);
     fuenteLista = TTF_OpenFont(RutasAssets::obtenerRutaFuenteRegular().c_str(), 20);
@@ -92,9 +95,7 @@ void PantallaGestionArchivos::escanearDirectorio(SDL_Renderer* renderer) {
 }
 
 void PantallaGestionArchivos::cleanup() {
-    // 🔹 ESPERAR A QUE TERMINE EL HILO SI ESTÁ ACTIVO
     if (tareaIO.valid()) {
-        std::cout << "[CLEANUP] Esperando a que termine I/O..." << std::endl;
         tareaIO.wait();
     }
     
@@ -117,22 +118,32 @@ void PantallaGestionArchivos::cleanup() {
 }
 
 void PantallaGestionArchivos::handleEvents(Game& game) {
-    // 🔹 BLOQUEAR INTERACCIÓN DURANTE LA CARGA
-    if (cargandoDatos) return;
-    
     SDL_Event evento;
+    
+    // CORRECCION: Siempre procesar eventos para mantener la ventana viva
     while (SDL_PollEvent(&evento)) {
-        if (evento.type == SDL_EVENT_QUIT) game.setEstaCorriendo(false);
+        if (evento.type == SDL_EVENT_QUIT) {
+            game.setEstaCorriendo(false);
+            return;
+        }
+
+        // Si estamos cargando, ignoramos la INTERACCIÓN, pero ya procesamos el evento de sistema
+        if (cargandoDatos) continue;
 
         if (inputNuevoArchivo) inputNuevoArchivo->manejarEvento(evento);
 
         if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN && evento.button.button == SDL_BUTTON_LEFT) {
+            
+            // Debounce
+            if (SDL_GetTicks() - tiempoInicio < 300) { 
+                return;
+            }
+
             float mx = evento.button.x;
             float my = evento.button.y;
 
             if (btnVolver && btnVolver->estaPresionado(mx, my)) {
                 game.popEstado();
-                std::cout << "[FLAG] Gestion Archivos: Volver" << std::endl;
                 return;
             }
 
@@ -145,12 +156,10 @@ void PantallaGestionArchivos::handleEvents(Game& game) {
 
             if (modoGuardar && btnNuevoArchivo && btnNuevoArchivo->estaPresionado(mx, my)) {
                 crearYSeleccionar(game);
-                std::cout << "[FLAG] Gestion Archivos: Crear Nuevo" << std::endl;
             }
 
             if (!modoGuardar && btnCargarTest && btnCargarTest->estaPresionado(mx, my)) {
                 cargarDatosPrueba(game);
-                std::cout << "[FLAG] Gestion Archivos: Cargar 1000 Pruebas" << std::endl;
             }
         }
     }
@@ -159,14 +168,10 @@ void PantallaGestionArchivos::handleEvents(Game& game) {
 void PantallaGestionArchivos::seleccionarArchivo(Game& game, const std::string& ruta) {
     if (cargandoDatos) return;
     
-    std::cout << "[FLAG] Gestion Archivos: INICIANDO I/O ASÍNCRONO. Ruta: " << ruta << std::endl;
-    
-    // 🔹 ACTIVAR ESTADO DE CARGA
     cargandoDatos = true;
     rutaPendiente = ruta;
     modoGuardarPendiente = modoGuardar;
     
-    // 🔹 GENERAR TEXTURA DE "CARGANDO..."
     if (texCargando) SDL_DestroyTexture(texCargando);
     texCargando = RenderizadorTextos::renderizarTexto(
         game.getRenderer(), 
@@ -186,15 +191,12 @@ void PantallaGestionArchivos::seleccionarArchivo(Game& game, const std::string& 
         };
     }
     
-    // 🔹 LANZAR I/O EN HILO SEPARADO
     tareaIO = std::async(std::launch::async, [this, &game, ruta]() {
         try {
             if (modoGuardarPendiente) {
                 game.getManejadorRecetas().guardarRecetasAarchivo(ruta);
-                std::cout << "[I/O ASYNC] Guardado completado." << std::endl;
             } else {
                 game.getManejadorRecetas().cargarRecetasDesdeArchivo(ruta);
-                std::cout << "[I/O ASYNC] Carga completada." << std::endl;
             }
         } catch (const std::exception& e) {
             std::cerr << "[ERROR I/O ASYNC] " << e.what() << std::endl;
@@ -211,33 +213,25 @@ void PantallaGestionArchivos::crearYSeleccionar(Game& game) {
 }
 
 void PantallaGestionArchivos::cargarDatosPrueba(Game& game) {
-    std::cout << "[FLAG] Gestion Archivos: Generando 1000 recetas en memoria..." << std::endl;
     ListaDoblementeLigada<Receta> datosTest = DatosPruebaRecetario::obtenerRecetasDeEjemplo();
-    
     for (int i = 0; i < datosTest.obtenerCantidadElementos(); ++i) {
-        Receta r = datosTest.obtenerEnPosicion(i); 
         try {
-            game.getManejadorRecetas().agregarRecetaNueva(r);
+            game.getManejadorRecetas().agregarRecetaNueva(datosTest.obtenerEnPosicion(i));
         } catch (...) {} 
     }
-    std::cout << "[FLAG] Gestion Archivos: Datos de prueba inyectados. Saliendo." << std::endl;
     game.popEstado();
 }
 
 void PantallaGestionArchivos::update(Game& game) { 
-    // 🔹 VERIFICAR SI EL I/O TERMINÓ
     if (cargandoDatos && tareaIO.valid()) {
         if (tareaIO.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
             tareaIO.get();
             cargandoDatos = false;
-            
-            std::cout << "[FLAG] I/O finalizado. Regresando." << std::endl;
             game.popEstado();
             return;
         }
     }
     
-    // Actualizar botones solo si NO está cargando
     if (!cargandoDatos) {
         for(auto& b : listaBotonesArchivos) b.btn->actualizar();
         if(btnNuevoArchivo) btnNuevoArchivo->actualizar();
@@ -254,20 +248,16 @@ void PantallaGestionArchivos::render(Game& game) {
     SDL_SetRenderDrawColor(r, 230, 235, 240, 255);
     SDL_RenderClear(r);
 
-    // 🔹 SI ESTÁ CARGANDO, RENDERIZAR OVERLAY
     if (cargandoDatos) {
-        // Dimming
         SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(r, 0, 0, 0, 180);
         SDL_FRect overlay = {0, 0, (float)w, (float)h};
         SDL_RenderFillRect(r, &overlay);
         
-        // Mensaje de carga
         if (texCargando) {
             SDL_RenderTexture(r, texCargando, nullptr, &rectCargando);
         }
         
-        // Spinner animado
         float tiempo = SDL_GetTicks() / 100.0f;
         int puntos = ((int)tiempo % 4);
         std::string puntosStr(puntos, '.');
@@ -277,34 +267,26 @@ void PantallaGestionArchivos::render(Game& game) {
         );
         
         if (tPuntos) {
-            SDL_FRect rP = {
-                rectCargando.x + rectCargando.w + 10,
-                rectCargando.y,
-                (float)tPuntos->w,
-                (float)tPuntos->h
-            };
+            SDL_FRect rP = { rectCargando.x + rectCargando.w + 10, rectCargando.y, (float)tPuntos->w, (float)tPuntos->h };
             SDL_RenderTexture(r, tPuntos, nullptr, &rP);
             SDL_DestroyTexture(tPuntos);
         }
         
         SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
-        SDL_RenderPresent(r);
+        
+        // CORRECCION: Eliminado SDL_RenderPresent para evitar parpadeo
         return;
     }
 
-    // UI NORMAL
     if (texTitulo) SDL_RenderTexture(r, texTitulo, nullptr, &rectTitulo);
 
     for (const auto& item : listaBotonesArchivos) {
         SDL_SetRenderDrawColor(r, 255, 255, 255, 200);
         SDL_FRect row = { 100.0f, item.rectLabel.y - 5, 824.0f, 40.0f };
         SDL_RenderFillRect(r, &row);
-
         item.btn->render(r);
         SDL_RenderTexture(r, item.label, nullptr, &item.rectLabel);
     }
-
-    float yBottom = (float)h - 100.0f;
 
     if (modoGuardar) {
         if (inputNuevoArchivo) inputNuevoArchivo->render(r);
@@ -318,11 +300,9 @@ void PantallaGestionArchivos::render(Game& game) {
             SDL_DestroyTexture(tLbl);
             SDL_DestroySurface(sLbl);
         }
-
     } else {
         if (btnCargarTest) {
             btnCargarTest->render(r);
-            
             SDL_Surface* sLbl = TTF_RenderText_Blended(fuenteLista, "Cargar datos de prueba", 0, {0, 100, 0, 255});
             if (sLbl) {
                 SDL_Texture* tLbl = SDL_CreateTextureFromSurface(r, sLbl);
@@ -336,5 +316,5 @@ void PantallaGestionArchivos::render(Game& game) {
 
     if (btnVolver) btnVolver->render(r);
     
-    SDL_RenderPresent(r);
+    // CORRECCION: Eliminado SDL_RenderPresent para evitar parpadeo
 }

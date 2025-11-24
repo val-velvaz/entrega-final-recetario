@@ -24,7 +24,7 @@ PantallaVisualizarRecetas::PantallaVisualizarRecetas()
       texIconoOjo(nullptr), texIconoBasura(nullptr), texIconoEditar(nullptr),
       texLblNombre(nullptr), texLblTiempo(nullptr), texLblCat(nullptr), texLblAut(nullptr),
       texLblCargar(nullptr), texLblGuardar(nullptr), texLblDelAll(nullptr),
-      btnVolver(nullptr), filtroNombre("") {
+      btnVolver(nullptr), filtroNombre(""), cacheCantidadRecetas(-1) { // Inicializar en -1 para forzar carga
           
     if (burbujas.empty()) {
         for(int i=0; i<20; ++i) {
@@ -38,7 +38,6 @@ PantallaVisualizarRecetas::~PantallaVisualizarRecetas() {
 }
 
 void PantallaVisualizarRecetas::init(Game& game) {
-    // 🔹 Regenerar cache si regresamos de gestión de archivos
     SDL_Renderer* renderer = game.getRenderer();
     SDL_Window* window = game.getWindow();
     int w, h;
@@ -151,62 +150,51 @@ void PantallaVisualizarRecetas::handleEvents(Game& game) {
             float my = evento.button.y;
 
             for (const auto& item : itemsLista) {
-                // OJO
                 if (mx >= item.rectOjo.x && mx <= (item.rectOjo.x + item.rectOjo.w) &&
                     my >= item.rectOjo.y && my <= (item.rectOjo.y + item.rectOjo.h)) {
                     Receta r = game.getManejadorRecetas().obtenerRecetaEnPosicion(item.indiceOriginal);
                     game.pushEstado(new PantallaDetalleReceta(r));
-                    std::cout << "[FLAG] Click: Ver Detalle Receta: " << r.obtenerNombrePlatillo() << std::endl;
                     return;
                 }
-                // EDITAR
                 if (mx >= item.rectEditar.x && mx <= (item.rectEditar.x + item.rectEditar.w) &&
                     my >= item.rectEditar.y && my <= (item.rectEditar.y + item.rectEditar.h)) {
                     Receta r = game.getManejadorRecetas().obtenerRecetaEnPosicion(item.indiceOriginal);
                     game.pushEstado(new PantallaAgregarReceta(r));
-                    std::cout << "[FLAG] Click: Editar Receta: " << r.obtenerNombrePlatillo() << std::endl;
                     return;
                 }
-                // ELIMINAR
                 if (mx >= item.rectBasura.x && mx <= (item.rectBasura.x + item.rectBasura.w) &&
                     my >= item.rectBasura.y && my <= (item.rectBasura.y + item.rectBasura.h)) {
                     Receta r = game.getManejadorRecetas().obtenerRecetaEnPosicion(item.indiceOriginal);
                     game.getManejadorRecetas().eliminarRecetaPorNombre(r.obtenerNombrePlatillo());
                     generarCacheListado(game); 
-                    std::cout << "[FLAG] Click: Eliminar Rapido Receta: " << r.obtenerNombrePlatillo() << std::endl;
                     return;
                 }
             }
 
             if (btnVolver && btnVolver->estaPresionado(mx, my)) {
                 game.popEstado();
-                std::cout << "[FLAG] Click: Volver" << std::endl;
             }
-            else if (btnOrdNombre && btnOrdNombre->estaPresionado(mx, my)) { game.getManejadorRecetas().ordenarRecetasPorNombre(); generarCacheListado(game); std::cout << "[FLAG] Click: Ordenar por Nombre" << std::endl; }
-            else if (btnOrdTiempo && btnOrdTiempo->estaPresionado(mx, my)) { game.getManejadorRecetas().ordenarRecetasPorTiempoPreparacion(); generarCacheListado(game); std::cout << "[FLAG] Click: Ordenar por Tiempo" << std::endl; }
-            else if (btnOrdCategoria && btnOrdCategoria->estaPresionado(mx, my)) { game.getManejadorRecetas().ordenarRecetasPorCategoria(); generarCacheListado(game); std::cout << "[FLAG] Click: Ordenar por Categoria" << std::endl; }
-            else if (btnOrdAutor && btnOrdAutor->estaPresionado(mx, my)) { game.getManejadorRecetas().ordenarRecetasPorAutor(); generarCacheListado(game); std::cout << "[FLAG] Click: Ordenar por Autor" << std::endl; }
-            else if (btnBuscar && btnBuscar->estaPresionado(mx, my)) { filtroNombre = inputBusqueda->obtenerTexto(); generarCacheListado(game); std::cout << "[FLAG] Click: Buscar" << std::endl; }
-            else if (btnReset && btnReset->estaPresionado(mx, my)) { filtroNombre = ""; inputBusqueda->establecerTexto(""); generarCacheListado(game); std::cout << "[FLAG] Click: Reset Busqueda" << std::endl; }
+            else if (btnOrdNombre && btnOrdNombre->estaPresionado(mx, my)) { game.getManejadorRecetas().ordenarRecetasPorNombre(); generarCacheListado(game); }
+            else if (btnOrdTiempo && btnOrdTiempo->estaPresionado(mx, my)) { game.getManejadorRecetas().ordenarRecetasPorTiempoPreparacion(); generarCacheListado(game); }
+            else if (btnOrdCategoria && btnOrdCategoria->estaPresionado(mx, my)) { game.getManejadorRecetas().ordenarRecetasPorCategoria(); generarCacheListado(game); }
+            else if (btnOrdAutor && btnOrdAutor->estaPresionado(mx, my)) { game.getManejadorRecetas().ordenarRecetasPorAutor(); generarCacheListado(game); }
+            else if (btnBuscar && btnBuscar->estaPresionado(mx, my)) { filtroNombre = inputBusqueda->obtenerTexto(); generarCacheListado(game); }
+            else if (btnReset && btnReset->estaPresionado(mx, my)) { filtroNombre = ""; inputBusqueda->establecerTexto(""); generarCacheListado(game); }
             else if (btnCargar && btnCargar->estaPresionado(mx, my)) { 
                 game.pushEstado(new PantallaGestionArchivos(false)); 
-                std::cout << "[FLAG] Click: Gestion Archivos (Modo Cargar)" << std::endl;
             }
             else if (btnGuardar && btnGuardar->estaPresionado(mx, my)) { 
                 game.pushEstado(new PantallaGestionArchivos(true)); 
-                std::cout << "[FLAG] Click: Gestion Archivos (Modo Guardar)" << std::endl;
             }
             else if (btnEliminarTodo && btnEliminarTodo->estaPresionado(mx, my)) { 
                 game.getManejadorRecetas().eliminarTodasLasRecetas(); 
                 generarCacheListado(game); 
-                std::cout << "[FLAG] Click: Eliminar Todo" << std::endl;
             }
         }
     }
 }
 
 void PantallaVisualizarRecetas::update(Game& game) {
-    (void)game;
     if(btnBuscar) btnBuscar->actualizar();
     if(btnReset) btnReset->actualizar();
     if(btnOrdNombre) btnOrdNombre->actualizar();
@@ -217,6 +205,13 @@ void PantallaVisualizarRecetas::update(Game& game) {
     if(btnGuardar) btnGuardar->actualizar();
     if(btnEliminarTodo) btnEliminarTodo->actualizar();
     if(btnVolver) btnVolver->actualizar();
+
+    // CORRECCIÓN CRÍTICA: Auto-refrescar si los datos cambiaron (por ejemplo, tras cargar archivo)
+    int cantidadActual = game.getManejadorRecetas().obtenerCantidadRecetas();
+    if (cantidadActual != cacheCantidadRecetas) {
+        std::cout << "[UI] Detectado cambio en recetas. Actualizando lista..." << std::endl;
+        generarCacheListado(game);
+    }
 
     for(auto& b : burbujas) {
         b.y -= b.speed;
@@ -234,20 +229,23 @@ void PantallaVisualizarRecetas::generarCacheListado(Game& game) {
     }
     itemsLista.clear();
 
+    // Actualizar la caché de cantidad para evitar bucles infinitos de regeneración
+    ManejadorRecetas& manejador = game.getManejadorRecetas();
+    cacheCantidadRecetas = manejador.obtenerCantidadRecetas();
+
     SDL_Renderer* renderer = game.getRenderer();
     SDL_Color colorTexto = {50, 50, 50, 255};
     float yActual = 160.0f;
     float xPadding = 50.0f;
 
-    ManejadorRecetas& manejador = game.getManejadorRecetas();
-    int cantidad = manejador.obtenerCantidadRecetas();
     int itemsMostrados = 0;
 
-    for (int i = 0; i < cantidad; ++i) {
+    for (int i = 0; i < cacheCantidadRecetas; ++i) {
         const Receta& receta = manejador.obtenerRecetaEnPosicion(i);
         
         if (!filtroNombre.empty()) {
             std::string nombreRec = receta.obtenerNombrePlatillo();
+            // Búsqueda insensible a mayúsculas sería mejor, pero esto cumple
             if (nombreRec.find(filtroNombre) == std::string::npos) {
                 continue;
             }
@@ -291,6 +289,11 @@ void PantallaVisualizarRecetas::generarCacheListado(Game& game) {
         itemVacio.textura = RenderizadorTextos::renderizarTexto(renderer, fuenteLista, "No se encontraron recetas.", {150, 0, 0, 255});
         if (itemVacio.textura) {
             itemVacio.rect = { xPadding, yActual, (float)itemVacio.textura->w, (float)itemVacio.textura->h };
+            // Inicializamos rects vacíos para evitar crashes
+            itemVacio.rectOjo = {0,0,0,0};
+            itemVacio.rectEditar = {0,0,0,0};
+            itemVacio.rectBasura = {0,0,0,0};
+            itemVacio.texMiniatura = nullptr;
             itemsLista.push_back(itemVacio);
         }
     }
@@ -334,6 +337,12 @@ void PantallaVisualizarRecetas::render(Game& game) {
     if (texLblDelAll) SDL_RenderTexture(renderer, texLblDelAll, nullptr, &rLblDelAll);
 
     for (const auto& item : itemsLista) {
+        // Si es un item de mensaje vacío, no dibujar fondo ni botones
+        if (item.rectOjo.w == 0) {
+             if (item.textura) SDL_RenderTexture(renderer, item.textura, nullptr, &item.rect);
+             continue;
+        }
+
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150);
         SDL_FRect rowBg = { 40, item.rect.y - 2, 944, 34 };
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -370,4 +379,3 @@ void PantallaVisualizarRecetas::render(Game& game) {
 
     if (btnVolver) btnVolver->render(renderer);
 }
-

@@ -1,4 +1,4 @@
-# --- CONFIGURACIÓN DEL COMPILADOR ---
+﻿# --- CONFIGURACIÓN DEL COMPILADOR ---
 CXX = g++
 
 # --- CONFIGURACIÓN DE DIRECTORIOS ---
@@ -55,6 +55,6 @@ clean:
 fresh: clean all
 
 run: all
-	@echo "Ejecutando programa..."
+	@echo "Ejecutando programa desde raiz..."
 	@echo "========================================"
-	cd $(BIN_DIR) && ./recetario_game.exe
+	./$(TARGET)

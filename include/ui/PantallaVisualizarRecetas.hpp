@@ -2,7 +2,7 @@
 #include "ui/GameState.hpp"
 #include "ui/Boton.hpp"
 #include "ui/CajaDeTexto.hpp"
-#include "ui/PantallaGestionArchivos.hpp" // NUEVO
+#include "ui/PantallaGestionArchivos.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <vector>
@@ -14,7 +14,7 @@ struct ItemLista {
     SDL_FRect rect;
     int indiceOriginal;
     SDL_FRect rectOjo;
-    SDL_FRect rectEditar; // NUEVO
+    SDL_FRect rectEditar;
     SDL_FRect rectBasura;
 };
 
@@ -40,11 +40,9 @@ private:
     Boton* btnGuardar;
     Boton* btnEliminarTodo;
     
-    // Boton* btnIrAEliminar; // ELIMINADO, ahora es por fila
-
     SDL_Texture* texIconoOjo;
     SDL_Texture* texIconoBasura;
-    SDL_Texture* texIconoEditar; // NUEVO
+    SDL_Texture* texIconoEditar;
 
     SDL_Texture* texLblNombre; SDL_FRect rLblNombre;
     SDL_Texture* texLblTiempo; SDL_FRect rLblTiempo;
@@ -57,6 +55,9 @@ private:
     Boton* btnVolver;
     std::vector<ItemLista> itemsLista;
     std::string filtroNombre; 
+
+    // CORRECCIÓN: Variable para detectar cambios en los datos y auto-actualizarse
+    int cacheCantidadRecetas;
 
     void generarCacheListado(Game& game);
 

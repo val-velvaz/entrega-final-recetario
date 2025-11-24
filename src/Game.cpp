@@ -1,15 +1,50 @@
 ﻿#include "Game.hpp"
 #include "ui/PantallaMenuPrincipal.hpp"
+#include "DatosPruebaRecetario.hpp" // NECESARIO para los datos de prueba
 #include <iostream>
 #include <stdexcept>
-// #include <SDL3_image/SDL_image.h> // No es necesario explícitamente aquí si no usamos IMG_Init
+#include <string>
 
 Game::Game() : ventana(nullptr), renderer(nullptr), estaCorriendo(false) {
     try {
         inicializarSDL();
         
-        // Inicio vacío (sin cargar datos automáticos)
-        // cargarDatos(); 
+        // =========================================================
+        // ⚡ CARGA AUTOMÁTICA DE 1000 RECETAS (BYPASS)
+        // =========================================================
+        std::cout << "[INIT] Generando 1000 recetas de prueba en memoria..." << std::endl;
+        
+        // 1. Obtenemos las recetas base (aprox 12)
+        ListaDoblementeLigada<Receta> listaBase = DatosPruebaRecetario::obtenerRecetasDeEjemplo();
+        
+        int cantidadObjetivo = 1000;
+        int cantidadActual = 0;
+        
+        // 2. Bucle para multiplicar las recetas hasta llegar a 1000
+        while (cantidadActual < cantidadObjetivo) {
+            for (int i = 0; i < listaBase.obtenerCantidadElementos(); ++i) {
+                if (cantidadActual >= cantidadObjetivo) break;
+                
+                // Copiamos una receta base
+                Receta nuevaReceta = listaBase.obtenerEnPosicion(i);
+                
+                // Le cambiamos el nombre para que sea única (ej: "Mole #15")
+                // Esto es importante para que las búsquedas y ordenamientos se noten
+                std::string nombreUnico = nuevaReceta.obtenerNombrePlatillo() + " #" + std::to_string(cantidadActual + 1);
+                nuevaReceta.establecerNombrePlatillo(nombreUnico);
+                
+                // La guardamos en el manejador principal
+                try {
+                    manejadorRecetas.agregarRecetaNueva(nuevaReceta);
+                    cantidadActual++;
+                } catch (...) {
+                    // Ignorar duplicados si ocurren
+                }
+            }
+        }
+        
+        std::cout << "[INIT] Carga completada. Total recetas: " << manejadorRecetas.obtenerCantidadRecetas() << std::endl;
+        // =========================================================
         
         this->estaCorriendo = true;
         
@@ -45,27 +80,24 @@ void Game::inicializarSDL() {
         throw std::runtime_error("Error al inicializar TTF: " + std::string(SDL_GetError()));
     }
     
-    // NOTA: En SDL3_image, IMG_Init ya no es necesario/no existe.
-    // La librería se auto-inicializa al usar IMG_Load.
-    
     std::cout << "[SISTEMA] Subsistemas SDL iniciados." << std::endl;
 }
 
 void Game::cargarDatos() {
+    // Deshabilitado temporalmente para usar la generación automática
+    /*
     try {
         manejadorRecetas.cargarRecetasDesdeArchivo(RUTA_ARCHIVO_RECETAS);
     } catch (...) {
         std::cout << "[DATOS] Error o archivo no encontrado." << std::endl;
     }
+    */
 }
 
 void Game::limpiar() {
-    try {
-        // Guardado manual recomendado, pero dejamos el automático por seguridad
-        manejadorRecetas.guardarRecetasAarchivo(RUTA_ARCHIVO_RECETAS);
-    } catch (const std::exception& e) {
-        std::cerr << "Error al guardar recetas: " << e.what() << std::endl;
-    }
+    // Evitamos guardar las 1000 recetas de prueba en el archivo real al salir
+    // para no ensuciar tu base de datos persistente.
+    // try { manejadorRecetas.guardarRecetasAarchivo(RUTA_ARCHIVO_RECETAS); } catch (...) {}
 
     while (!estadosJuego.estaVacia()) {
         try {
@@ -84,7 +116,6 @@ void Game::limpiar() {
     if (ventana) { SDL_DestroyWindow(ventana); ventana = nullptr; }
     
     TTF_Quit();
-    // IMG_Quit(); // Eliminado por ser obsoleto
     SDL_Quit();
     
     std::cout << "[SISTEMA] Recursos liberados. Adios." << std::endl;

@@ -7,8 +7,20 @@
 class PantallaMenuPrincipal : public GameState {
 private:
     TTF_Font* fuenteTitulo;
+    TTF_Font* fuenteLabels; // Fuente para los textos de abajo
+
     SDL_Texture* texturaTitulo;
     SDL_FRect rectTitulo;
+
+    // Texturas de las etiquetas
+    SDL_Texture* texLblAgregar;
+    SDL_Texture* texLblVer;
+    SDL_Texture* texLblSalir;
+
+    // Posiciones de las etiquetas
+    SDL_FRect rectLblAgregar;
+    SDL_FRect rectLblVer;
+    SDL_FRect rectLblSalir;
 
     Boton* btnAgregar;
     Boton* btnVer;

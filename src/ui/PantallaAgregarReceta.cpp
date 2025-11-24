@@ -1,5 +1,6 @@
 ﻿#include "ui/PantallaAgregarReceta.hpp"
 #include "ui/PantallaMenuPrincipal.hpp"
+#include "ui/PantallaExito.hpp" // <--- ¡IMPORTANTE! Incluir la nueva pantalla
 #include "Game.hpp"
 #include "persistence/RutasAssets.hpp"
 #include "utils/RenderizadorTextos.hpp"
@@ -28,7 +29,6 @@ PantallaAgregarReceta::PantallaAgregarReceta(const Receta& r) : PantallaAgregarR
     modoEdicion = true;
     nombreOriginal = r.obtenerNombrePlatillo();
     
-    // Guardar datos para init()
     tempNombre = r.obtenerNombrePlatillo();
     tempAutor = r.obtenerAutor().obtenerNombreCompleto();
     tempTiempo = std::to_string(r.obtenerTiempoPreparacion());
@@ -38,7 +38,6 @@ PantallaAgregarReceta::PantallaAgregarReceta(const Receta& r) : PantallaAgregarR
     rutaImagenTemporal = r.obtenerRutaImagen();
     if (!rutaImagenTemporal.empty()) imagenCargada = true;
 
-    // Copiar ingredientes
     const auto& lista = r.obtenerIngredientesConstante();
     for(int i=0; i<lista.obtenerCantidadElementos(); ++i) {
         listaIngredientesTemp.agregarAlFinal(lista.obtenerEnPosicion(i));
@@ -113,7 +112,6 @@ void PantallaAgregarReceta::init(Game& game) {
     btnGuardar = new Boton(renderer, RutasAssets::obtenerRutaIconoBotonGuardar(), w - 120, h - 80, 60, 60);
     btnCancelar = new Boton(renderer, RutasAssets::obtenerRutaIconoBotonVolver(), 60, h - 80, 60, 60);
 
-    // Renderizar lista ingredientes cargados
     for(int i=0; i<listaIngredientesTemp.obtenerCantidadElementos(); ++i) {
         Ingrediente ing = listaIngredientesTemp.obtenerEnPosicion(i);
         std::string txt = ing.obtenerNombre() + " | " + ing.obtenerCantidad() + " " + ing.obtenerUnidad();
@@ -188,7 +186,7 @@ void PantallaAgregarReceta::agregarIngredienteALista(SDL_Renderer* renderer) {
     Ingrediente nuevoIng(nom, cant, uni);
     listaIngredientesTemp.agregarAlFinal(nuevoIng);
 
-    std::string textoVisual = nom + "  |  " + cant + " " + uni;
+    std::string textoVisual = nom + "   |   " + cant + " " + uni;
     SDL_Texture* tex = RenderizadorTextos::renderizarTexto(renderer, fuenteLista, textoVisual, {60, 60, 60, 255});
     
     if (tex) {
@@ -397,13 +395,26 @@ void PantallaAgregarReceta::guardarReceta(Game& game) {
             } catch (...) {}
         }
 
-        // MODO EDICIÓN: Borrar la vieja antes de guardar la nueva
         if (modoEdicion) {
             game.getManejadorRecetas().eliminarRecetaPorNombre(nombreOriginal);
         }
 
         game.getManejadorRecetas().agregarRecetaNueva(nuevaReceta);
-        game.popEstado(); 
+        
+        // --- AQUÍ ESTÁ LA MAGIA: APILAR LA PANTALLA DE ÉXITO ---
+        game.pushEstado(new PantallaExito());
+        
+        // Nota: No hacemos popEstado() aquí para que el usuario vea el éxito encima
+        // y al dar Enter en PantallaExito, esa se cierre y vuelva aquí.
+        // Si quieres que al dar Enter salga de TODO, tendrías que manejarlo diferente.
+        // Por ahora, esto mostrará el éxito y al cerrar volverás al formulario.
+        
+        // Opcional: Limpiar formulario si no es edición
+        if (!modoEdicion) {
+             inputNombre->establecerTexto("");
+             inputTiempo->establecerTexto("");
+             // ... etc
+        }
 
     } catch (...) {}
 }

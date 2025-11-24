@@ -15,7 +15,7 @@ private:
     TTF_Font* fuenteTitulo;
     TTF_Font* fuenteLista;
     TTF_Font* fuenteSettings;
-    TTF_Font* fuenteCargando; // 🔹 NUEVO
+    TTF_Font* fuenteCargando;
     SDL_Texture* texTitulo;
     SDL_FRect rectTitulo;
 
@@ -38,13 +38,16 @@ private:
     SDL_Texture* texSeparador;
     std::string separadorActual;
 
-    // 🔹 NUEVO: Estado de carga asíncrona
+    // Estado de carga asíncrona
     bool cargandoDatos;
     std::future<void> tareaIO;
     std::string rutaPendiente;
     bool modoGuardarPendiente;
     SDL_Texture* texCargando;
     SDL_FRect rectCargando;
+    
+    // Variable para controlar el debounce (evitar doble clic)
+    Uint32 tiempoInicio; 
 
     void escanearDirectorio(SDL_Renderer* renderer);
     void seleccionarArchivo(Game& game, const std::string& nombre);
