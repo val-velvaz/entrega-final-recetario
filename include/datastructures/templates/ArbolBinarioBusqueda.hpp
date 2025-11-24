@@ -26,7 +26,6 @@ private:
             } else if (comparacion > 0) {
                 insertarRecursivo(nodo->derecha, valor, comparador);
             }
-            // Si es igual, decidimos no duplicar o manejarlo según lógica
         }
     }
 
@@ -75,4 +74,5 @@ public:
         destruirRecursivo(raiz);
         raiz = nullptr;
     }
+
 };
