@@ -7,7 +7,11 @@
                 "${workspaceFolder}/lib/**",
                 "${workspaceFolder}/lib/SDL3/x86_64-w64-mingw32/include",
                 "${workspaceFolder}/lib/SDL_ttf/x86_64-w64-mingw32/include",
-                "${workspaceFolder}/lib/SDL3_image/x86_64-w64-mingw32/include"
+                "${workspaceFolder}/lib/SDL3_image/x86_64-w64-mingw32/include",
+                "C:/msys64/ucrt64/include",
+                "C:/msys64/ucrt64/include/c++/12.2.0",
+                "C:/msys64/ucrt64/include/c++/12.2.0/x86_64-w64-mingw32",
+                "C:/msys64/ucrt64/include/c++/12.2.0/backward"
             ],
             "defines": [
                 "_DEBUG",
@@ -17,7 +21,19 @@
             "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
             "cStandard": "c17",
             "cppStandard": "c++14",
-            "intelliSenseMode": "windows-gcc-x64"
+            "intelliSenseMode": "windows-gcc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/include",
+                    "${workspaceFolder}/lib/**",
+                    "C:/msys64/ucrt64/include",
+                    "C:/msys64/ucrt64/include/c++/12.2.0",
+                    "C:/msys64/ucrt64/include/c++/12.2.0/x86_64-w64-mingw32",
+                    "C:/msys64/ucrt64/include/c++/12.2.0/backward"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": "${workspaceFolder}/.vscode/browse.vc.db"
+            }
         }
     ],
     "version": 4

@@ -1,7 +1,7 @@
 # --- COMANDO PARA CONSOLIDAR CÓDIGO PARA CLAUDE ---
 
 $RutaRaiz = "C:\Universidad\estructuras-de-datos"
-$ArchivoSalida = "$RutaRaiz\todo_el_codigo_final.txt"
+$ArchivoSalida = "$RutaRaiz\todo_el_codigo_final2.txt"
 
 # 1. Asegurar que el directorio de salida exista
 Set-Location $RutaRaiz

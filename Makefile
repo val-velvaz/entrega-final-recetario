@@ -1,5 +1,5 @@
-﻿# --- CONFIGURACIÓN DEL COMPILADOR ---
-CXX = g++.exe
+# --- CONFIGURACIÓN DEL COMPILADOR ---
+CXX = g++
 
 # --- CONFIGURACIÓN DE DIRECTORIOS ---
 SRC_DIR = src
@@ -16,13 +16,12 @@ SDL_TTF_PATH = $(LIB_DIR)/SDL_ttf/x86_64-w64-mingw32
 SDL_IMG_PATH = $(LIB_DIR)/SDL3_image/x86_64-w64-mingw32
 
 INCLUDES = -Iinclude -I$(SDL3_PATH)/include -I$(SDL_TTF_PATH)/include -I$(SDL_IMG_PATH)/include
-LIBS = -L$(SDL3_PATH)/lib -L$(SDL_TTF_PATH)/lib -L$(SDL_IMG_PATH)/lib -lSDL3_image -lSDL3_ttf -lSDL3
+LIBS = -L$(SDL3_PATH)/lib -L$(SDL_TTF_PATH)/lib -L$(SDL_IMG_PATH)/lib -lSDL3_image -lSDL3_ttf -lSDL3 -mwindows
 
-# --- BANDERAS (FLAGS) ---
-CXXFLAGS = -std=c++17 $(INCLUDES) -m64 -Wall -Wextra -g
+# --- FLAGS DE COMPILACIÓN ---
+CXXFLAGS = -std=c++17 $(INCLUDES) -Wall -Wextra -g
 
 # --- BÚSQUEDA RECURSIVA DE ARCHIVOS ---
-# Nota: En Windows MSYS2, 'find' funciona bien. Si falla, usaremos wildcard.
 SOURCES = $(shell find $(SRC_DIR) -name '*.cpp')
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
@@ -34,7 +33,7 @@ all: directories $(TARGET)
 $(TARGET): $(OBJECTS)
 	@echo "=== ENLAZANDO EJECUTABLE ==="
 	$(CXX) -o $@ $^ $(LIBS)
-	@echo "COMPILACION EXITOSA: $@"
+	@echo "COMPILACIÓN EXITOSA: $@"
 	@echo "Copiando DLLs necesarias..."
 	@cp $(SDL3_PATH)/bin/*.dll $(BIN_DIR)/ 2>/dev/null || true
 	@cp $(SDL_TTF_PATH)/bin/*.dll $(BIN_DIR)/ 2>/dev/null || true
@@ -46,8 +45,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 directories:
-	@mkdir -p $(OBJ_DIR)
-	@mkdir -p $(BIN_DIR)
+	@mkdir -p $(OBJ_DIR) $(BIN_DIR)
 
 clean:
 	@echo "Limpiando..."
@@ -59,4 +57,4 @@ fresh: clean all
 run: all
 	@echo "Ejecutando programa..."
 	@echo "========================================"
-	./$(TARGET)
+	cd $(BIN_DIR) && ./recetario_game.exe

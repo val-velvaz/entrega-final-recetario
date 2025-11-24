@@ -1,4 +1,4 @@
-﻿#include "datastructures/managers/ManejadorRecetas.hpp"
+#include "datastructures/managers/ManejadorRecetas.hpp"
 #include <stdexcept>
 #include <fstream>
 #include <limits>
