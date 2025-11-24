@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
-#include <utility> // Necesario para std::swap
+#include <utility> 
 
 template <typename TipoDato>
 class ListaSimplementeLigada {
@@ -32,7 +32,6 @@ public:
         cantidadElementosActuales_(0) {
     }
 
-    // Constructor de copia seguro
     ListaSimplementeLigada(const ListaSimplementeLigada<TipoDato>& otraLista)
         : punteroNodoInicio_(nullptr),
         punteroNodoFinal_(nullptr),
@@ -49,7 +48,6 @@ public:
         }
     }
 
-    // Constructor de movimiento
     ListaSimplementeLigada(ListaSimplementeLigada<TipoDato>&& otraLista) noexcept
         : punteroNodoInicio_(otraLista.punteroNodoInicio_),
         punteroNodoFinal_(otraLista.punteroNodoFinal_),
@@ -64,18 +62,14 @@ public:
         limpiarLista();
     }
 
-    // CORRECCIÓN CRÍTICA: Copy-and-Swap para seguridad de excepciones
     ListaSimplementeLigada<TipoDato>& operator=(const ListaSimplementeLigada<TipoDato>& otraLista) {
         if (this != &otraLista) {
-            // 1. Hacemos una copia temporal (si falla new, no pasa nada aquí)
             ListaSimplementeLigada<TipoDato> temporal(otraLista);
             
-            // 2. Intercambiamos los punteros (operación atómica/segura)
             std::swap(punteroNodoInicio_, temporal.punteroNodoInicio_);
             std::swap(punteroNodoFinal_, temporal.punteroNodoFinal_);
             std::swap(cantidadElementosActuales_, temporal.cantidadElementosActuales_);
             
-            // 3. Al salir, 'temporal' destruye los datos viejos automáticamente
         }
         return *this;
     }
@@ -156,7 +150,6 @@ public:
             punteroNodoInicio_ = nullptr;
             punteroNodoFinal_ = nullptr;
         } else {
-            // O(N) es inevitable en lista simple sin puntero previo
             NodoSimplementeLigado<TipoDato>* nodoAnteriorAlFinal = 
                 obtenerNodoEnPosicion(cantidadElementosActuales_ - 2);
             
@@ -193,8 +186,6 @@ public:
             return;
         }
 
-        // Optimización: si borran el último, usar la lógica de eliminarDelFinal
-        // para mantener punteroNodoFinal_ correcto
         if (posicionEliminacion == cantidadElementosActuales_ - 1) {
             eliminarDelFinal();
             return;
@@ -241,7 +232,6 @@ public:
         cantidadElementosActuales_ = 0;
     }
 
-    // ... (Iteradores y to string se mantienen igual)
     std::string obtenerRepresentacionTexto(
         std::string (*convertirATexto)(const TipoDato&)
     ) const {
@@ -260,3 +250,4 @@ public:
         return representacion.str();
     }
 };
+
