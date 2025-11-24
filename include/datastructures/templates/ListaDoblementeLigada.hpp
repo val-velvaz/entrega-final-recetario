@@ -4,8 +4,8 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
-#include <utility> // Para std::swap y std::move
-#include <functional> // Para std::function
+#include <utility> 
+#include <functional> 
 
 template <typename TipoDato>
 class ListaDoblementeLigada {
@@ -20,7 +20,6 @@ private:
         }
 
         NodoDoblementeLigado<TipoDato>* nodoActual = nullptr;
-        // Optimización: Buscar desde el inicio o desde el final según cercanía
         if (posicion < (cantidadElementosActuales_ / 2)) {
             nodoActual = punteroNodoInicio_;
             for (int i = 0; i < posicion; ++i) {
@@ -37,12 +36,10 @@ private:
     }
 
 public:
-    // Constructor por defecto
     ListaDoblementeLigada()
         : punteroNodoInicio_(nullptr), punteroNodoFinal_(nullptr), cantidadElementosActuales_(0) {
     }
 
-    // Constructor de Copia (Deep Copy) Seguro
     ListaDoblementeLigada(const ListaDoblementeLigada<TipoDato>& otraLista)
         : punteroNodoInicio_(nullptr), punteroNodoFinal_(nullptr), cantidadElementosActuales_(0) {
         try {
@@ -57,7 +54,6 @@ public:
         }
     }
 
-    // Constructor de Movimiento (Move Constructor)
     ListaDoblementeLigada(ListaDoblementeLigada<TipoDato>&& otraLista) noexcept
         : punteroNodoInicio_(otraLista.punteroNodoInicio_),
         punteroNodoFinal_(otraLista.punteroNodoFinal_),
@@ -68,12 +64,10 @@ public:
         otraLista.cantidadElementosActuales_ = 0;
     }
 
-    // Destructor
     ~ListaDoblementeLigada() {
         limpiarLista();
     }
 
-    // Operador de Asignación por Copia (Copy Assignment) - Idioma Copy-and-Swap
     ListaDoblementeLigada<TipoDato>& operator=(const ListaDoblementeLigada<TipoDato>& otraLista) {
         if (this != &otraLista) {
             ListaDoblementeLigada<TipoDato> copiaTemporal(otraLista);
@@ -84,7 +78,6 @@ public:
         return *this;
     }
 
-    // Operador de Asignación por Movimiento (Move Assignment)
     ListaDoblementeLigada<TipoDato>& operator=(ListaDoblementeLigada<TipoDato>&& otraLista) noexcept {
         if (this != &otraLista) {
             limpiarLista();
@@ -99,7 +92,6 @@ public:
         return *this;
     }
 
-    // --- MÉTODOS DE GESTIÓN ---
 
     void agregarAlFinal(const TipoDato& elementoNuevo) {
         NodoDoblementeLigado<TipoDato>* nodoNuevo = nullptr;
@@ -203,7 +195,6 @@ public:
         cantidadElementosActuales_--;
     }
 
-    // --- MÉTODOS DE ACCESO (LOS QUE TE FALTABAN) ---
 
     TipoDato& obtenerEnPosicion(int posicion) {
         NodoDoblementeLigado<TipoDato>* nodo = obtenerNodoEnPosicion(posicion);
@@ -225,7 +216,6 @@ public:
         return cantidadElementosActuales_ == 0;
     }
 
-    // --- MÉTODOS DE UTILIDAD ---
 
     void limpiarLista() {
         NodoDoblementeLigado<TipoDato>* nodoActual = punteroNodoInicio_;
@@ -239,7 +229,6 @@ public:
         cantidadElementosActuales_ = 0;
     }
 
-    // Nuevo método para iteración eficiente (O(N) en vez de O(N^2))
     void paraCadaElemento(std::function<void(TipoDato&)> accion) {
         NodoDoblementeLigado<TipoDato>* actual = punteroNodoInicio_;
         while (actual != nullptr) {
@@ -286,3 +275,4 @@ public:
         }
     }
 };
+
