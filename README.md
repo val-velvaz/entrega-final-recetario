@@ -1,24 +1,186 @@
-# 📚 Recetario Interactivo v2.0.0: Estructuras de Datos (C++ & SDL3) 
-Estado del ProyectoEste proyecto es una aplicación de escritorio robusta para la gestión de recetas de cocina, desarrollada como una implementación práctica de estructuras de datos y algoritmos en C++17 Moderno.A diferencia de aplicaciones estándar, no se utilizan contenedores de la STL (como std::vector o std::list) para el almacenamiento de datos. Toda la lógica de nodos, gestión de memoria y estructuras lineales ha sido construida manualmente para demostrar dominio técnico. Estado Actual (v2.0.0)La versión 2.0.0 marca la transición a una arquitectura estable y de alto rendimiento.MóduloEstadoDetalles TécnicosEstructuras de Datos CompletasImplementación manual de Listas Dobles, Pilas y Colas con gestión de memoria segura (RAII).Algoritmos✅ OptimizadosQuicksort Recursivo y Búsqueda Binaria funcionales sobre listas enlazadas.Interfaz Gráfica✅ PulidaUI basada en SDL3 sin parpadeos (flickering free), con feedback visual y animaciones.Persistencia (I/O)✅ EstableNuevo: Sistema de carga y guardado asíncrono (multithreading) que no congela la interfaz.Rendimiento✅ AltoCapacidad probada para inyectar y manejar +1000 recetas en memoria. Novedades de la Versión 2.0.0Carga Asíncrona (Multithreading): La lectura y escritura de archivos .dat ahora ocurre en hilos separados (std::future, std::async), permitiendo que la interfaz siga respondiendo con animaciones de carga mientras procesa los datos.Feedback Visual Interactivo:Animaciones de partículas (efecto de lluvia/confeti) al guardar con éxito o al salir.Indicadores de carga en tiempo real.Drag & Drop: Soporte nativo para arrastrar imágenes desde el explorador de archivos a la ventana para asignarlas a una receta.Generación Masiva: Herramienta interna para generar 1000 recetas de prueba automáticamente para pruebas de estrés de los algoritmos de ordenamiento.🛠️ Tecnologías y RequisitosEl proyecto está configurado para Windows (x64) utilizando el entorno MSYS2 / UCRT64 (MinGW).ComponenteTecnologíaJustificaciónLenguajeC++17Uso de std::filesystem, std::future y semántica de movimiento.Compiladorg++ (MinGW-W64)Compilación estricta con flags -Wall -Wextra -m64.GráficosSDL3Renderizado acelerado por hardware, manejo de eventos y ventanas.ExtensionesSDL3_image & SDL3_ttfCarga de texturas (PNG/JPG) y renderizado de fuentes TrueType.Build SystemMakefileAutomatización de compilación, linkeo y gestión de recursos.🧠 Arquitectura de Datos (Implementación Manual)El núcleo del proyecto reside en la carpeta include/datastructures. Se cumple estrictamente la Regla de los Cinco de C++ para evitar fugas de memoria.1. Estructuras LinealesLista Doblemente Ligada (ListaDoblementeLigada<T>):Uso: Contenedor principal del recetario.Características: Nodos con punteros next y prev. Permite el recorrido bidireccional esencial para el algoritmo Quicksort implementado.Lista Simplemente Ligada (ListaSimplementeLigada<T>):Uso: Lista de ingredientes dentro de cada receta.Pila Dinámica (PilaDinamica<T>):Uso: Gestión de estados de la aplicación (State Pattern). Permite navegar "atrás" entre pantallas.2. AlgoritmosQuicksort Recursivo: Implementado para trabajar directamente sobre los punteros de la lista doblemente ligada (sin copiar a arrays).Criterios: Ordenamiento por Nombre, Tiempo, Categoría y Autor.Búsqueda Binaria: Optimización de búsqueda O(log n) sobre la lista previamente ordenada.🖥️ Arquitectura de la Interfaz (UI)La aplicación utiliza un Patrón de Estados (State Pattern) para la gestión de vistas:Game (Contexto): Mantiene la ventana, el renderer y la pila de estados.GameState (Interfaz): Clase base abstracta con métodos vitales:handleEvents(): Procesa inputs (teclado, mouse, drag&drop).update(): Lógica de frame (animaciones, timers).render(): Dibujado en pantalla.Pantallas Implementadas:PantallaMenuPrincipal: Navegación central.PantallaVisualizarRecetas: Tabla interactiva con filtros y ordenamiento.PantallaAgregarReceta: Formulario con validaciones y carga de imágenes.PantallaGestionArchivos: Interfaz de I/O con feedback asíncrono.PantallaExito / PantallaSalida: Feedback visual con sistema de partículas.⚙️ Instrucciones de Compilación y EjecuciónRequisitos PreviosTener instalado MSYS2 con la toolchain de UCRT64 y las librerías SDL3.Comandos (Makefile)Bash# 1. Limpieza completa y recompilación desde cero (Recomendado)
+# 📚 Recetario Interactivo v2.0.0
+
+### Aplicación de Recetas con Estructuras de Datos Avanzadas en C++ & SDL3
+
+---
+
+## 📌 Resumen Ejecutivo
+
+Recetario Interactivo v2.0.0 es una aplicación de escritorio enfocada en la *gestión eficiente de recetas de cocina, diseñada como una demostración práctica de **estructuras de datos avanzadas implementadas manualmente en C++17*.
+A diferencia de aplicaciones comunes, *no utiliza contenedores STL* (como std::vector o std::list).
+Toda la lógica de listas, pilas, colas, nodos y memoria dinámica fue desarrollada desde cero para mostrar dominio técnico profundo.
+
+---
+
+# 🚀 Estado Actual (Versión 2.0.0 – Stable Release)
+
+La versión 2.0.0 introduce mejoras sustanciales de rendimiento, estabilidad y experiencia de usuario:
+
+| Módulo                   | Estado        | Detalles Técnicos                                                                                 |
+| ------------------------ | ------------- | ------------------------------------------------------------------------------------------------- |
+| *Estructuras de Datos* | ✅ Completas   | Implementación manual de listas doblemente ligadas, pilas y colas. Memoria administrada con RAII. |
+| *Algoritmos*           | ✅ Optimizados | Quicksort recursivo y búsqueda binaria operando directamente sobre listas enlazadas.              |
+| *Interfaz Gráfica*     | ✅ Pulida      | UI basada en SDL3 sin parpadeos, con feedback visual amigable.                                    |
+| *Persistencia I/O*     | ✅ Estable     | Nuevo sistema asíncrono de carga/guardado sin congelar la interfaz.                               |
+| *Rendimiento*          | ✅ Alto        | Maneja más de *1000 recetas simultáneas* sin pérdida notable de rendimiento.                    |
+
+---
+
+# ✨ Novedades de la Versión 2.0.0
+
+### 🔹 Carga Asíncrona (Multithreading)
+
+Implementada con std::future y std::async.
+Permite leer y guardar archivos .dat sin bloquear la interfaz.
+
+### 🔹 Feedback Visual Interactivo
+
+* Animaciones de partículas (lluvia/confeti) al guardar o salir
+* Indicadores de carga en tiempo real
+* Transiciones suaves entre pantallas
+
+### 🔹 Drag & Drop de Imágenes
+
+Arrastra una imagen desde el explorador directamente a la ventana para asignarla a una receta.
+
+### 🔹 Generación Masiva
+
+Herramienta interna que crea *1000 recetas de prueba* para stress testing de algoritmos.
+
+---
+
+# 🛠 Tecnologías y Requisitos
+
+| Componente       | Tecnología                     | Motivo                                                                   |
+| ---------------- | ------------------------------ | ------------------------------------------------------------------------ |
+| *Lenguaje*     | C++17                          | Uso de std::filesystem, std::future, semántica de movimiento y RAII. |
+| *Compilador*   | g++ (MinGW-W64 – UCRT64/MSYS2) | Flags estrictos: -Wall -Wextra -m64.                                   |
+| *Gráficos*     | SDL3                           | Renderizado acelerado, manejo de ventanas y eventos.                     |
+| *Extensiones*  | SDL3_image, SDL3_ttf           | Carga de imágenes PNG/JPG y fuentes TTF.                                 |
+| *Build System* | Makefile                       | Compilación y despliegue automatizado.                                   |
+
+---
+
+# 🧠 Arquitectura de Datos (Implementación Manual)
+
+Las estructuras están ubicadas en include/datastructures/ y cumplen estrictamente con la *Regla de los Cinco* para evitar fugas de memoria.
+
+## ⿡ Estructuras Lineales
+
+### ✔ Lista Doblemente Ligada (ListaDoblementeLigada<T>)
+
+* Contenedor principal del recetario
+* Recorrido bidireccional
+* Soporta Quicksort sin copiar datos a arreglos
+
+### ✔ Lista Simplemente Ligada (ListaSimplementeLigada<T>)
+
+* Usada para los ingredientes de cada receta
+
+### ✔ Pila Dinámica (PilaDinamica<T>)
+
+* Manejo del patrón State (navegación entre pantallas)
+
+---
+
+## ⿢ Algoritmos
+
+### ✔ *Quicksort Recursivo*
+
+Adaptado para listas doblemente ligadas.
+Criterios de ordenamiento:
+
+* Nombre
+* Tiempo
+* Categoría
+* Autor
+
+### ✔ *Búsqueda Binaria*
+
+Operativa sobre la lista ya ordenada en O(log n).
+
+---
+
+# 🖥 Arquitectura de la Interfaz (UI)
+
+Patrón utilizado: *State Pattern*
+
+### 🔹 Game (Contexto Global)
+
+* Mantiene ventana, renderer y pila de estados.
+
+### 🔹 GameState (Interfaz Base)
+
+Cada pantalla implementa:
+
+* handleEvents()
+* update()
+* render()
+
+### Pantallas actuales:
+
+* *PantallaMenuPrincipal*
+* *PantallaVisualizarRecetas*
+* *PantallaAgregarReceta*
+* *PantallaGestionArchivos*
+* *PantallaExito / PantallaSalida*
+
+---
+
+# ⚙ Compilación y Ejecución
+
+### 📌 Requisitos previos
+
+* MSYS2 (UCRT64)
+* SDL3 + SDL3_image + SDL3_ttf instaladas
+* Make
+
+### 📦 Comandos (Makefile)
+
+bash
+# 1. Limpieza completa y recompilación (Recomendado)
 make fresh
 
-# 2. Compilar solo cambios y generar ejecutable
+# 2. Compilar solo cambios
 make
 
 # 3. Ejecutar la aplicación
 make run
 
-# 4. Limpiar archivos temporales (.o) y binarios
+# 4. Limpiar archivos temporales
 make clean
-Nota de Despliegue: El Makefile se encarga automáticamente de copiar las DLLs necesarias (SDL3.dll, libgcc..., etc.) y la carpeta assets al directorio output/ para generar un binario portable.📂 Estructura del ProyectoPlaintextRecetario/
-├── assets/             # Recursos (Fuentes, Imágenes, Iconos, Datos)
-├── include/            # Archivos de Cabecera (.hpp)
-│   ├── datastructures/ # Templates de Estructuras y Managers
-│   ├── entities/       # Clases del Dominio (Receta, Ingrediente)
-│   ├── persistence/    # Manejo de Archivos
-│   ├── ui/             # Clases de Interfaz Gráfica
-│   └── utils/          # Validadores y Helpers
+
+
+### 🔎 Nota de despliegue
+
+El Makefile copia automáticamente:
+
+* DLLs necesarias (SDL3.dll, libgcc... etc.)
+* Carpeta assets/
+  al directorio output/, generando un binario portable.
+
+---
+
+# 📂 Estructura del Proyecto
+
+
+Recetario/
+├── assets/             # Fuentes, Imágenes, Iconos, Datos
+├── include/
+│   ├── datastructures/ # Estructuras de datos personalizadas
+│   ├── entities/       # Receta, Ingrediente, Nombre...
+│   ├── persistence/    # Lectura y escritura de archivos
+│   ├── ui/             # Componentes gráficos
+│   └── utils/          # Validadores y funciones auxiliares
 ├── lib/                # Librerías externas (SDL3)
-├── src/                # Código Fuente (.cpp)
-└── output/             # Binarios generados (Ejecutable final)
-Autor: [Tu Nombre / Equipo]Curso: Estructuras de DatosVersión: 2.0.0 (Stable Release)
+├── src/                # Código fuente (.cpp)
+└── output/             # Ejecutable final
+
+
+---
+
+# 👨‍💻 Autoría
+
+* *Autor:* [Tu Nombre / Equipo]
+* *Curso:* Estructuras de Datos
+* *Versión:* 2.0.0 (Stable Release)
