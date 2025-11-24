@@ -1,7 +1,4 @@
-﻿// ============================================================================
-// ARCHIVO: include/entities/Receta.hpp
-// Definición de la clase Receta
-// ============================================================================
+
 #pragma once
 #include <string>
 #include <iostream>
@@ -117,13 +114,9 @@ public:
         return ingredientesListaOrdenada.obtenerCantidadElementos(); 
     }
 
-    // ========================================================================
-    // OPERADORES DE FLUJO - Serialización
-    // ========================================================================
-    
-    // Escritura a stream (para guardar en archivos)
+)
     friend std::ostream& operator<<(std::ostream& salida, const Receta& receta);
     
-    // Lectura desde stream (para cargar desde archivos)
     friend std::istream& operator>>(std::istream& entrada, Receta& receta);
 };
+
