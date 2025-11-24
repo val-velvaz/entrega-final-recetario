@@ -6,9 +6,9 @@
 template <typename TipoDato, int CAPACIDAD_MAXIMA = 1000>
 class PilaEstatica {
 private:
-    TipoDato* arregloDatos_;                 // Arreglo dinámico
-    int posicionTopePila_;                   // Posición del tope (-1 = vacía)
-    int capacidadMaxima_;                    // Capacidad máxima
+    TipoDato* arregloDatos_;               
+    int posicionTopePila_;                 
+    int capacidadMaxima_;                    
 
 public:
     PilaEstatica()
@@ -126,4 +126,5 @@ public:
         }
         return representacion.str();
     }
+
 };
