@@ -5,9 +5,9 @@
 
 class Ingrediente {
 private:
-    std::string nombreIngrediente;      // Nombre del ingrediente
-    std::string cantidadIngrediente;    // Cantidad (ej: "2", "1/2", "3.5")
-    std::string unidadMedida;           // Unidad (ej: "tazas", "gramos", "piezas")
+    std::string nombreIngrediente;    
+    std::string cantidadIngrediente;   
+    std::string unidadMedida;          
 
 public:
     Ingrediente();
@@ -57,6 +57,6 @@ public:
 
     friend std::ostream& operator<<(std::ostream& salida, const Ingrediente& ing);
     
-    // Lectura desde stream (para cargar desde archivos)
     friend std::istream& operator>>(std::istream& entrada, Ingrediente& ing);
+
 };
