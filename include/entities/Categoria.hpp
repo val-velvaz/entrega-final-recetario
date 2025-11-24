@@ -9,5 +9,5 @@ enum class Categoria {
     SIN_CATEGORIZAR
 };
 
-// Declaración de la función para que sea visible globalmente
 std::string categoriaATexto(Categoria categoria);
+
